@@ -223,7 +223,7 @@ class ZohoService {
       // Use the concept paper form name from environment
       const conceptFormName = process.env.ZOHO_CREATOR_FORM2_NAME;
       const url = `https://creator.zoho.com/api/v2/${this.orgId}/${this.appId}/form/${conceptFormName}`;
-      
+      console.log('Zoho Creator Concept URL:', url);
       const headers = {
         'Authorization': `Zoho-oauthtoken ${accessToken}`,
         'Content-Type': 'application/json'

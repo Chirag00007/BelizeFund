@@ -2,9 +2,11 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
+const dotenv = require('dotenv');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
-require('dotenv').config({ path: './config.env' });
+dotenv.config(); // Now loads from .env by default
+
 
 const applicationRoutes = require('./routes/applicationRoutes');
 
