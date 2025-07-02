@@ -43,9 +43,9 @@ app.use((err, req, res, next) => {
 });
 
 // --- Serve React build in production ---
-app.use(express.static(path.resolve(__dirname, '../Frontend/dist')));
+app.use(express.static(path.resolve(__dirname, '../frontend/dist')));
 app.get('*', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../Frontend/dist', 'index.html'));
+  res.sendFile(path.resolve(__dirname, '../frontend/dist', 'index.html'));
 });
 
 
