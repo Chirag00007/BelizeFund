@@ -1,4 +1,6 @@
 const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
 require('dotenv').config({ path: './config.env' });
 
 class ZohoService {
@@ -11,8 +13,26 @@ class ZohoService {
     this.orgId = process.env.ZOHO_CREATOR_ORG_ID;
     this.appId = process.env.ZOHO_CREATOR_APP_ID;
     this.formName = process.env.ZOHO_CREATOR_FORM_NAME;
+    this.conceptFormName = process.env.ZOHO_CREATOR_FORM2_NAME;
     this.accessToken = null;
     this.tokenExpiry = null;
+    
+    // Validate required environment variables
+    const requiredEnvVars = [
+      'ZOHO_TOKEN_URL', 'ZOHO_CLIENT_ID', 'ZOHO_CLIENT_SECRET', 
+      'ZOHO_REDIRECT_URI', 'ZOHO_REFRESH_TOKEN', 'ZOHO_CREATOR_ORG_ID', 
+      'ZOHO_CREATOR_APP_ID', 'ZOHO_CREATOR_FORM2_NAME'
+    ];
+    
+    const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+    if (missingVars.length > 0) {
+      console.warn('Missing Zoho environment variables:', missingVars);
+    }
+    
+    console.log('Zoho Service initialized with:');
+    console.log('- Org ID:', this.orgId);
+    console.log('- App ID:', this.appId);
+    console.log('- Concept Form Name:', this.conceptFormName);
   }
 
   async fetchAccessToken() {
@@ -427,15 +447,8 @@ class ZohoService {
     }
 
     // Co-financing entries as text summary (if needed)
-    if (conceptData.coFinancingEntries && conceptData.coFinancingEntries.length > 0) {
-      const coFinancingSummary = conceptData.coFinancingEntries
-        .filter(entry => entry.organization && entry.contribution > 0)
-        .map(entry => `${entry.organization}: $${entry.contribution} (${entry.percentage}%)`)
-        .join('; ');
-      
-      if (coFinancingSummary) {
-        mappedData.Co_Financing_Details = coFinancingSummary;
-      }
+    if (totalCoFinancing > 0) {
+      mappedData.Co_Financing_Details = `Total Co-financing: $${totalCoFinancing.toFixed(2)}`;
     }
 
     // Declaration fields (if needed)
@@ -455,6 +468,92 @@ class ZohoService {
     });
     
     return mappedData;
+  }
+
+  async uploadFileToRecord(recordId, fieldName, fileBuffer, fileName) {
+    try {
+      const accessToken = await this.getValidAccessToken();
+      
+      // Use the exact Zoho Creator API format from documentation
+      // URL: https://www.zohoapis.com/creator/v2.1/data/<account_owner_name>/<app_link_name>/report/<report_link_name>/<record_ID>/<field_link_name>/upload
+      const reportName = 'All_Gap_Concept_Paper';
+      const uploadUrl = `https://www.zohoapis.com/creator/v2.1/data/${this.orgId}/${this.appId}/report/${reportName}/${recordId}/${fieldName}/upload`;
+      
+      console.log('Upload URL:', uploadUrl);
+      console.log('Uploading file:', fileName, 'to field:', fieldName, 'for record:', recordId);
+      console.log('Org ID:', this.orgId);
+      console.log('App ID:', this.appId);
+      console.log('Form Name:', this.conceptFormName);
+      console.log('Report Name:', reportName);
+      
+      // Create form data exactly as shown in documentation
+      const formData = new FormData();
+      formData.append('file', fileBuffer, fileName);
+      
+      // Headers as per documentation
+      const headers = {
+        'Authorization': `Zoho-oauthtoken ${accessToken}`,
+        ...formData.getHeaders()
+      };
+
+      // Parameters as per documentation - passed as query parameters
+      const queryParams = new URLSearchParams({
+        skip_workflow: '["schedules","form_workflow"]'
+      });
+
+      const fullUrl = `${uploadUrl}?${queryParams.toString()}`;
+
+      console.log('Full upload URL with params:', fullUrl);
+      console.log('File upload config:', {
+        url: fullUrl,
+        headers: Object.keys(headers),
+        fileName: fileName,
+        fieldName: fieldName,
+        reportName: reportName
+      });
+
+      // Make the request using axios with the exact format from documentation
+      const response = await axios({
+        method: 'POST',
+        url: fullUrl,
+        headers: headers,
+        data: formData,
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity
+      });
+      
+      console.log('File upload response status:', response.status);
+      console.log('File upload response data:', response.data);
+      
+      // Check for successful upload (code 3000 as per documentation)
+      if (response.data && response.data.code === 3000) {
+        return {
+          success: true,
+          message: `File ${fileName} uploaded successfully to ${fieldName}`,
+          data: response.data
+        };
+      } else {
+        return {
+          success: false,
+          message: `Upload failed: ${response.data?.message || 'Unknown error'}`,
+          error: response.data
+        };
+      }
+      
+    } catch (error) {
+      console.error(`Error uploading file to ${fieldName}:`, error.message);
+      if (error.response) {
+        console.error('Upload Error Response Status:', error.response.status);
+        console.error('Upload Error Response Data:', error.response.data);
+        console.error('Upload Error Response Headers:', error.response.headers);
+      }
+      
+      return {
+        success: false,
+        message: `Failed to upload file to ${fieldName}: ${error.message}`,
+        error: error.response?.data || error.message
+      };
+    }
   }
 }
 

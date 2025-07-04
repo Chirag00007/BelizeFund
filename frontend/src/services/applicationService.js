@@ -1,4 +1,5 @@
 const API_BASE_URL = 'https://belizefund.onrender.com/api';
+// const API_BASE_URL = 'http://localhost:5000/api';
 
 // Mock mode for testing without backend
 const MOCK_MODE = false; // Set to false when backend is available
@@ -405,32 +406,89 @@ class ApplicationService {
     }
 
     try {
-      console.log('Submitting concept paper to:', `${API_BASE_URL}/applications/concept/zoho/create`);
-      console.log('Concept data payload:', conceptData);
+      console.log('Step 1: Submitting concept paper data...');
       
-      const response = await fetch(`${API_BASE_URL}/applications/concept/zoho/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(conceptData),
-      });
+      const formDataForSubmission = { ...conceptData };
+      const filesToUpload = {
+        registrationCertFile: formDataForSubmission.registrationCertFile,
+        articlesFile: formDataForSubmission.articlesFile,
+        certGoodStandingFile: formDataForSubmission.certGoodStandingFile,
+      };
 
-      console.log('Concept submission response status:', response.status);
-      console.log('Concept submission response ok:', response.ok);
+      // Remove file objects from form data for initial submission
+      delete formDataForSubmission.registrationCertFile;
+      delete formDataForSubmission.articlesFile;
+      delete formDataForSubmission.certGoodStandingFile;
 
-      if (!response.ok) {
-        const error = await response.json();
-        console.error('Concept submission error:', error);
-        throw new Error(error.message || 'Failed to submit concept paper');
+      // Create the record first
+      const createResponse = await this.createConceptZohoRecord(formDataForSubmission);
+
+      if (!createResponse.success || !createResponse.data.recordId) {
+        throw new Error(createResponse.message || 'Failed to create concept record');
       }
 
-      const result = await response.json();
-      console.log('Concept paper submission successful:', result);
-      return result;
+      const recordId = createResponse.data.recordId;
+      console.log(`Step 2: Record created with ID: ${recordId}. Starting file uploads...`);
+
+      // Upload files one by one
+      const uploadPromises = [];
+      const fileMap = {
+        registrationCertFile: 'Certificate_of_Registration',
+        articlesFile: 'Articles_of_Association_Business_Extract',
+        certGoodStandingFile: 'Certificate_of_Good_Standing_BCAAR'
+      };
+
+      for (const [fileKey, fieldName] of Object.entries(fileMap)) {
+        if (filesToUpload[fileKey]) {
+          uploadPromises.push(
+            this.uploadConceptFile(recordId, fieldName, filesToUpload[fileKey])
+          );
+        }
+      }
+
+      const uploadResults = await Promise.all(uploadPromises);
+      const allUploadsSuccessful = uploadResults.every(r => r.success);
+      
+      console.log('Step 3: File upload results:', uploadResults);
+
+      return {
+        success: true,
+        recordId: recordId,
+        message: allUploadsSuccessful
+          ? 'Concept paper submitted and all files uploaded successfully!'
+          : 'Concept paper submitted, but some file uploads failed.',
+        uploadResults: uploadResults
+      };
+
     } catch (error) {
       console.error('Error submitting concept paper:', error);
       throw error;
+    }
+  }
+
+  async uploadConceptFile(recordId, fieldName, file) {
+    try {
+      const formData = new FormData();
+      formData.append('recordId', recordId);
+      formData.append('fieldName', fieldName);
+      formData.append('file', file);
+
+      const response = await fetch(`${API_BASE_URL}/applications/concept/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        return { success: false, fieldName, message: error.message || 'Upload failed' };
+      }
+      
+      const result = await response.json();
+      return { success: result.success, fieldName, message: result.message };
+
+    } catch (error) {
+      console.error(`Error uploading file for ${fieldName}:`, error);
+      return { success: false, fieldName, message: error.message };
     }
   }
 
@@ -455,7 +513,6 @@ class ApplicationService {
       throw error;
     }
   }
-
 
 }
 

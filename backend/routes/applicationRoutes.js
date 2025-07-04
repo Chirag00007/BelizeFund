@@ -1,9 +1,28 @@
 const express = require('express');
+const multer = require('multer');
 const { body, validationResult } = require('express-validator');
 const Application = require('../models/Application');
 const zohoService = require('../services/zohoService');
+const emailService = require('../services/emailService');
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Only allow PDF files
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF files are allowed'), false);
+    }
+  }
+});
 
 // Validation middleware
 const validateApplication = [
@@ -226,18 +245,70 @@ router.post('/concept/zoho/create', async (req, res) => {
     // Validate required fields for concept paper
     if (!conceptData.projectTitle || !conceptData.contactName || !conceptData.contactEmail) {
       return res.status(400).json({
+        success: false,
         message: 'Missing required fields: projectTitle, contactName, contactEmail'
       });
     }
 
-    // Create concept record in Zoho Creator
+    // --- Preliminary Eligibility Check ---
+    const checkEligibility = (data) => {
+      const { organizationType, otherOrganizationType, dateOfIncorporation } = data;
+      const disallowedTypes = ['Statutory Body', 'Government'];
+      let finalOrgType = organizationType;
+
+      if (organizationType === 'Other' && otherOrganizationType) {
+        finalOrgType = otherOrganizationType;
+      }
+
+      if (disallowedTypes.some(type => finalOrgType.toLowerCase().includes(type.toLowerCase()))) {
+        return { eligible: false, reason: 'Organization type is not eligible.' };
+      }
+
+      if (!dateOfIncorporation) {
+        return { eligible: false, reason: 'Date of incorporation is required for eligibility check.' };
+      }
+
+      const incorporationDate = new Date(dateOfIncorporation);
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
+      if (incorporationDate > oneYearAgo) {
+        return { eligible: false, reason: 'Organization must have existed for at least one year.' };
+      }
+
+      return { eligible: true };
+    };
+
+    const eligibility = checkEligibility(conceptData);
+
+    // Always create the record in Zoho regardless of eligibility
     const result = await zohoService.createConceptRecord(conceptData);
+
+    // Send email based on eligibility
+    if (eligibility.eligible) {
+      const successEmailHtml = emailService.getSuccessEmailTemplate(conceptData.contactName);
+      await emailService.sendEmail(
+        conceptData.contactEmail,
+        'Concept Paper Submission Successful',
+        successEmailHtml
+      );
+    } else {
+      const ineligibleEmailHtml = emailService.getIneligibleEmailTemplate(conceptData.contactName, eligibility.reason);
+      await emailService.sendEmail(
+        conceptData.contactEmail,
+        'Concept Paper Submission Status',
+        ineligibleEmailHtml
+      );
+    }
     
+    // Respond to frontend
     res.status(201).json({
       success: true,
       message: 'Concept paper record created successfully in Zoho Creator',
-      data: result
+      data: result,
+      eligibility: eligibility // Optionally send eligibility status to frontend
     });
+
   } catch (error) {
     console.error('Error creating concept record in Zoho Creator:', error);
     res.status(500).json({
@@ -248,7 +319,50 @@ router.post('/concept/zoho/create', async (req, res) => {
   }
 });
 
+// Endpoint to upload a single file to a concept record
+router.post('/concept/upload', upload.single('file'), async (req, res) => {
+  try {
+    const { recordId, fieldName } = req.body;
+    const file = req.file;
 
+    if (!recordId || !fieldName || !file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: recordId, fieldName, and file are required.'
+      });
+    }
+
+    console.log(`File upload request for record ${recordId}, field ${fieldName}`);
+
+    const result = await zohoService.uploadFileToRecord(
+      recordId,
+      fieldName,
+      file.buffer,
+      file.originalname
+    );
+
+    if (result.success) {
+      res.status(200).json({
+        success: true,
+        message: `File uploaded successfully to ${fieldName}`,
+        data: result.data
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: `Failed to upload file: ${result.message}`,
+        error: result.error
+      });
+    }
+  } catch (error) {
+    console.error('Error uploading file to concept record:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error uploading file to concept record',
+      error: error.message
+    });
+  }
+});
 
 // Test Zoho connection
 router.get('/zoho/test', async (req, res) => {
