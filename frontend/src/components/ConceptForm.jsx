@@ -22,32 +22,39 @@ import {
 const conceptSchema = yup.object().shape({
   // Background Information
   projectTitle: yup.string()
+    .required('Project title is required')
     .test('word-count', 'Project title should be 15 words or less', function(value) {
       if (!value) return true
       const wordCount = value.trim().split(/\s+/).length
       return wordCount <= 15
     }),
-  organizationName: yup.string(),
-  organizationAddress: yup.string(),
-  organizationType: yup.string(),
-  dateOfIncorporation: yup.date(),
+  organizationName: yup.string().required('Organization name is required'),
+  organizationAddress: yup.string().required('Organization address is required'),
+  district: yup.string().required('District is required'),
+  organizationType: yup.string().required('Organization type is required'),
+  otherOrganizationType: yup.string().when('organizationType', {
+    is: 'Other',
+    then: yup.string().required('Please specify organization type')
+  }),
+  dateOfIncorporation: yup.date().required('Date of incorporation is required'),
   
   // Main Contact
-  contactName: yup.string(),
-  contactPosition: yup.string(),
-  contactEmail: yup.string().email('Invalid email'),
-  contactTelephone: yup.string(),
+  contactName: yup.string().required('Contact name is required'),
+  contactPosition: yup.string().required('Contact position is required'),
+  contactEmail: yup.string().email('Invalid email').required('Contact email is required'),
+  contactTelephone: yup.string().required('Contact telephone is required'),
   
   // Project Duration
-  proposedStartDate: yup.date(),
-  durationMonths: yup.number().positive('Duration must be positive'),
+  proposedStartDate: yup.date().required('Start date is required'),
+  durationMonths: yup.number().positive('Duration must be positive').required('Duration is required'),
   
   // Award Category
-  awardCategory: yup.string(),
-  thematicArea: yup.string(),
+  thematicArea: yup.string().required('Thematic area is required'),
+  awardCategory: yup.string().required('Award category is required'),
   
   // Content Sections
   projectSummary: yup.string()
+    .required('Project summary is required')
     .test('word-count', 'Summary should be 250 words or less', function(value) {
       if (!value) return true
       const wordCount = value.trim().split(/\s+/).filter(word => word.length > 0).length
@@ -55,6 +62,7 @@ const conceptSchema = yup.object().shape({
     }),
   
   projectGoalObjectives: yup.string()
+    .required('Project goals and objectives are required')
     .test('word-count', 'Content should be 200 words or less', function(value) {
       if (!value) return true
       const wordCount = value.trim().split(/\s+/).filter(word => word.length > 0).length
@@ -62,6 +70,7 @@ const conceptSchema = yup.object().shape({
     }),
     
   projectOutputsActivities: yup.string()
+    .required('Project outputs and activities are required')
     .test('word-count', 'Content should be 500 words or less', function(value) {
       if (!value) return true
       const wordCount = value.trim().split(/\s+/).filter(word => word.length > 0).length
@@ -73,11 +82,21 @@ const conceptSchema = yup.object().shape({
   totalCoFinancing: yup.number().min(0),
   
   // Declaration
-  legalRepresentativeName: yup.string(),
-  declarationDate: yup.date(),
+  legalRepresentativeName: yup.string().required('Legal representative name is required'),
+  declarationDate: yup.date().required('Declaration date is required'),
+  
+  // Required Documentation
+  hasRegistrationCert: yup.boolean(),
+  hasArticles: yup.boolean(),
+  hasCertGoodStanding: yup.boolean(),
+  hasReadImportantNote: yup.boolean(),
+  registrationCertFile: yup.mixed(),
+  articlesFile: yup.mixed(),
+  certGoodStandingFile: yup.mixed(),
 })
 
 const ConceptForm = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [wordCounts, setWordCounts] = useState({
     projectSummary: 0,
     projectGoalObjectives: 0,
@@ -90,7 +109,9 @@ const ConceptForm = () => {
       projectTitle: '',
       organizationName: '',
       organizationAddress: '',
+      district: '',
       organizationType: '',
+      otherOrganizationType: '',
       dateOfIncorporation: '',
       
       // Main Contact
@@ -104,8 +125,8 @@ const ConceptForm = () => {
       durationMonths: '',
       
       // Award Category & Thematic Area
-      awardCategory: '',
       thematicArea: '',
+      awardCategory: '',
       
       // Content Sections
       projectSummary: '',
@@ -123,57 +144,54 @@ const ConceptForm = () => {
       administrativeBudget: 0,
       totalCoFinancing: 0,
       
-      // Co-financing entries
-      coFinancingEntries: [{ organization: '', contribution: 0, percentage: 0 }],
-      
       // Declaration
       legalRepresentativeName: '',
       declarationDate: '',
+
+      // Required Documentation
+      hasRegistrationCert: false,
+      hasArticles: false,
+      hasCertGoodStanding: false,
+      hasReadImportantNote: false,
+      registrationCertFile: null,
+      articlesFile: null,
+      certGoodStandingFile: null,
     },
     validationSchema: conceptSchema,
     onSubmit: async (values) => {
+      setIsSubmitting(true);
+      const loadingToast = toast.loading('Submitting your concept paper...');
       try {
         console.log('Concept Paper Submitted:', values)
         
-        // Show loading toast
-        const loadingToast = toast.loading('Submitting concept paper to Zoho Creator...')
-        
-        // Ensure totalCoFinancing is synced with coFinancingEntries before submission
-        const coFinancingTotal = values.coFinancingEntries
-          .reduce((sum, entry) => sum + (parseFloat(entry.contribution) || 0), 0)
-        
-        const submissionData = {
-          ...values,
-          totalCoFinancing: coFinancingTotal
-        }
-        
-        console.log('Submission data with calculated totals:', submissionData)
-        
         // Submit to Zoho Creator via backend API
-        const result = await applicationService.submitConceptPaper(submissionData)
+        const result = await applicationService.submitConceptPaper(values);
         
-        toast.dismiss(loadingToast)
+        toast.dismiss(loadingToast);
         
         if (result.success) {
-          toast.success(`Concept paper submitted successfully! Record ID: ${result.data?.recordId || 'N/A'}`)
-          console.log('Zoho Creator submission result:', result)
+          toast.success(result.message || 'Concept paper submitted successfully!');
+          console.log('Zoho Creator submission result:', result);
           
           // Clear saved draft
-          localStorage.removeItem('conceptFormData')
+          localStorage.removeItem('conceptFormData');
           
           // Reset form
-          formik.resetForm()
+          formik.resetForm();
           setWordCounts({
             projectSummary: 0,
             projectGoalObjectives: 0,
             projectOutputsActivities: 0
-          })
+          });
         } else {
-          throw new Error(result.message || 'Failed to submit concept paper')
+          throw new Error(result.message || 'Failed to submit concept paper');
         }
       } catch (error) {
-        toast.error(`Error submitting concept paper: ${error.message}`)
-        console.error('Submission error:', error)
+        toast.dismiss(loadingToast);
+        toast.error(`Error submitting concept paper: ${error.message}`);
+        console.error('Submission error:', error);
+      } finally {
+        setIsSubmitting(false);
       }
     },
   })
@@ -220,18 +238,31 @@ const ConceptForm = () => {
   const coFinancingPercentage = totalProjectCost > 0 ? ((parseFloat(formik.values.totalCoFinancing) || 0) / totalProjectCost * 100).toFixed(1) : 0
   const requestedPercentage = totalProjectCost > 0 ? (totalBudgetRequested / totalProjectCost * 100).toFixed(1) : 0
 
-  const awardCategories = [
-    'Community Grant',
-    'Small Grants',
-    'Medium Grant',
-    'Large Grant'
-  ]
-
   const thematicAreas = [
-    'TA1. Protection of Biodiversity',
-    'TA2 Sustainable Fisheries',
-    'TA3. Climate Resilience',
-    'TA4. Blue Business Innovation'
+    {
+      id: 'TA2',
+      name: 'TA2. Sustainable Fisheries',
+      active: true,
+      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+    },
+    {
+      id: 'TA4',
+      name: 'TA4. Blue Business Innovation',
+      active: true,
+      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+    },
+    {
+      id: 'TA1',
+      name: 'TA1. Protection of Biodiversity',
+      active: false,
+      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+    },
+    {
+      id: 'TA3',
+      name: 'TA3. Climate Resilience',
+      active: false,
+      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+    }
   ]
 
   const organizationTypes = [
@@ -239,20 +270,30 @@ const ConceptForm = () => {
     'Private',
     'Community-based organization/association',
     'Academia',
-    'Government Agency',
     'International Organization',
     'Other'
+  ]
+
+  const districts = [
+    'Corozal',
+    'Orange Walk',
+    'Belize',
+    'Cayo',
+    'Stann Creek',
+    'Toledo'
   ]
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white">
       {/* Header */}
       <div className="mb-8 text-center border-b-2 border-blue-600 pb-6">
-        {/* <div className="flex justify-center mb-4">
-          <div className="text-sm text-gray-500">
-            Max 5 pages • Times New Roman • Size 11
-          </div>
-        </div> */}
+        <div className="flex justify-center mb-4">
+          <img 
+            src="/logo.png" 
+            alt="Belize Fund Logo" 
+            className="h-24 mb-4"
+          />
+        </div>
         
         <h1 className="text-3xl font-bold text-gray-800 mb-2">
           GRANTS AWARD PROGRAM (GAP)
@@ -260,9 +301,6 @@ const ConceptForm = () => {
         <h2 className="text-2xl font-semibold text-blue-600">
           CONCEPT PAPER
         </h2>
-        <p className="text-gray-600 mt-2">
-          Belize Fund Management - Condensed Project Proposal
-        </p>
       </div>
 
       <form onSubmit={formik.handleSubmit} className="space-y-8">
@@ -279,16 +317,17 @@ const ConceptForm = () => {
           {/* 1. Lead Organization */}
           <div className="mb-6 bg-white p-4 rounded-lg border">
             <h4 className="font-medium text-gray-700 mb-3">1. Lead Organization</h4>
+            
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Project Title <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <textarea
                   {...formik.getFieldProps('projectTitle')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Please limit to 15 words or less"
+                  rows="2"
                 />
                 {formik.touched.projectTitle && formik.errors.projectTitle && (
                   <p className="text-red-500 text-sm mt-1">{formik.errors.projectTitle}</p>
@@ -305,6 +344,9 @@ const ConceptForm = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Name of applying/lead organization"
                 />
+                {formik.touched.organizationName && formik.errors.organizationName && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.organizationName}</p>
+                )}
               </div>
 
               <div>
@@ -315,23 +357,69 @@ const ConceptForm = () => {
                   type="text"
                   {...formik.getFieldProps('organizationAddress')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="Headquarters/office address"
+                  placeholder="Office address"
                 />
+                {formik.touched.organizationAddress && formik.errors.organizationAddress && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.organizationAddress}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  District <span className="text-red-500">*</span>
+                </label>
+                <select
+                  {...formik.getFieldProps('district')}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select district</option>
+                  {districts.map(district => (
+                    <option key={district} value={district}>{district}</option>
+                  ))}
+                </select>
+                {formik.touched.district && formik.errors.district && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.district}</p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Type of Organization <span className="text-red-500">*</span>
                 </label>
-                <select
-                  {...formik.getFieldProps('organizationType')}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Select organization type</option>
-                  {organizationTypes.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </select>
+                <div className="space-y-2">
+                  <select
+                    {...formik.getFieldProps('organizationType')}
+                    onChange={(e) => {
+                      formik.handleChange(e);
+                      if (e.target.value === 'Other') {
+                        formik.setFieldValue('otherOrganizationType', '');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select organization type</option>
+                    {organizationTypes.map(type => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  {formik.touched.organizationType && formik.errors.organizationType && (
+                    <p className="text-red-500 text-sm mt-1">{formik.errors.organizationType}</p>
+                  )}
+                  
+                  {formik.values.organizationType === 'Other' && (
+                    <div>
+                      <input
+                        type="text"
+                        {...formik.getFieldProps('otherOrganizationType')}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Please specify organization type"
+                      />
+                      {formik.touched.otherOrganizationType && formik.errors.otherOrganizationType && (
+                        <p className="text-red-500 text-sm mt-1">{formik.errors.otherOrganizationType}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -343,6 +431,114 @@ const ConceptForm = () => {
                   {...formik.getFieldProps('dateOfIncorporation')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {formik.touched.dateOfIncorporation && formik.errors.dateOfIncorporation && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.dateOfIncorporation}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Required Documentation */}
+            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+              <h5 className="font-medium text-gray-700 mb-3">Required Documentation</h5>
+              <div className="space-y-4">
+                <div>
+                  <label className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      checked={formik.values.hasRegistrationCert}
+                      disabled={!formik.values.registrationCertFile}
+                      className="mr-2"
+                      readOnly
+                    />
+                    <span>Certificate of Registration</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        formik.setFieldValue('registrationCertFile', file);
+                        formik.setFieldValue('hasRegistrationCert', true);
+                      } else {
+                        formik.setFieldValue('registrationCertFile', null);
+                        formik.setFieldValue('hasRegistrationCert', false);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      checked={formik.values.hasArticles}
+                      disabled={!formik.values.articlesFile}
+                      className="mr-2"
+                      readOnly
+                    />
+                    <span>Articles of Association/Business Extract</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        formik.setFieldValue('articlesFile', file);
+                        formik.setFieldValue('hasArticles', true);
+                      } else {
+                        formik.setFieldValue('articlesFile', null);
+                        formik.setFieldValue('hasArticles', false);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100"
+                  />
+                </div>
+
+                <div>
+                  <label className="flex items-center mb-2">
+                    <input
+                      type="checkbox"
+                      checked={formik.values.hasCertGoodStanding}
+                      disabled={!formik.values.certGoodStandingFile}
+                      className="mr-2"
+                      readOnly
+                    />
+                    <span>Certificate of Good Standing (BCAAR)</span>
+                  </label>
+                  <input
+                    type="file"
+                    accept=".pdf"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        formik.setFieldValue('certGoodStandingFile', file);
+                        formik.setFieldValue('hasCertGoodStanding', true);
+                      } else {
+                        formik.setFieldValue('certGoodStandingFile', null);
+                        formik.setFieldValue('hasCertGoodStanding', false);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-500
+                      file:mr-4 file:py-2 file:px-4
+                      file:rounded-full file:border-0
+                      file:text-sm file:font-semibold
+                      file:bg-blue-50 file:text-blue-700
+                      hover:file:bg-blue-100"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -360,6 +556,9 @@ const ConceptForm = () => {
                   {...formik.getFieldProps('contactName')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {formik.touched.contactName && formik.errors.contactName && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.contactName}</p>
+                )}
               </div>
 
               <div>
@@ -371,6 +570,9 @@ const ConceptForm = () => {
                   {...formik.getFieldProps('contactPosition')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {formik.touched.contactPosition && formik.errors.contactPosition && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.contactPosition}</p>
+                )}
               </div>
 
               <div>
@@ -396,6 +598,9 @@ const ConceptForm = () => {
                   {...formik.getFieldProps('contactTelephone')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {formik.touched.contactTelephone && formik.errors.contactTelephone && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.contactTelephone}</p>
+                )}
               </div>
             </div>
           </div>
@@ -413,6 +618,9 @@ const ConceptForm = () => {
                   {...formik.getFieldProps('proposedStartDate')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
+                {formik.touched.proposedStartDate && formik.errors.proposedStartDate && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.proposedStartDate}</p>
+                )}
               </div>
 
               <div>
@@ -426,48 +634,57 @@ const ConceptForm = () => {
                   min="1"
                   placeholder="Enter duration in months"
                 />
+                {formik.touched.durationMonths && formik.errors.durationMonths && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.durationMonths}</p>
+                )}
               </div>
             </div>
           </div>
 
-          {/* 4. Award Category */}
+          {/* 4. Link to Belize Fund Thematic Area (TA) */}
           <div className="mb-6 bg-white p-4 rounded-lg border">
-            <h4 className="font-medium text-gray-700 mb-3">4. Award Category</h4>
-            <p className="text-sm text-gray-600 mb-3">Please select one of the Belize Fund's Award Categories below.</p>
-            <div className="grid md:grid-cols-2 gap-2">
-              {awardCategories.map(category => (
-                <label key={category} className="flex items-center">
-                  <input
-                    type="radio"
-                    name="awardCategory"
-                    value={category}
-                    checked={formik.values.awardCategory === category}
-                    onChange={formik.handleChange}
-                    className="mr-2 text-blue-600"
-                  />
-                  <span className="text-sm">{category}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* 5. Thematic Area */}
-          <div className="bg-white p-4 rounded-lg border">
-            <h4 className="font-medium text-gray-700 mb-3">5. Link to Belize Fund Thematic Area (TA)</h4>
+            <h4 className="font-medium text-gray-700 mb-3">4. Link to Belize Fund Thematic Area (TA)</h4>
             <p className="text-sm text-gray-600 mb-3">Please select the most relevant Thematic Area (Check only one)</p>
-            <div className="grid md:grid-cols-2 gap-2">
+            <div className="space-y-4">
               {thematicAreas.map(area => (
-                <label key={area} className="flex items-center">
-                  <input
-                    type="radio"
-                    name="thematicArea"
-                    value={area}
-                    checked={formik.values.thematicArea === area}
-                    onChange={formik.handleChange}
-                    className="mr-2 text-blue-600"
-                  />
-                  <span className="text-sm">{area}</span>
-                </label>
+                <div key={area.id} className={`p-4 rounded-lg ${area.active ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                  <label className="flex items-center">
+                    <input
+                      type="radio"
+                      name="thematicArea"
+                      value={area.name}
+                      checked={formik.values.thematicArea === area.name}
+                      onChange={formik.handleChange}
+                      disabled={!area.active}
+                      className="mr-2 text-blue-600"
+                    />
+                    <span className={`text-sm ${area.active ? 'text-gray-900' : 'text-gray-500'}`}>
+                      {area.name}
+                      {!area.active && <span className="ml-2 text-xs">(Currently inactive)</span>}
+                    </span>
+                  </label>
+                  
+                  {formik.values.thematicArea === area.name && (
+                    <div className="mt-3 ml-6">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Select Award Category:</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {area.awards.map(award => (
+                          <label key={award} className="flex items-center">
+                            <input
+                              type="radio"
+                              name="awardCategory"
+                              value={award}
+                              checked={formik.values.awardCategory === award}
+                              onChange={formik.handleChange}
+                              className="mr-2 text-blue-600"
+                            />
+                            <span className="text-sm">{award}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -489,15 +706,18 @@ const ConceptForm = () => {
           
           <div className="bg-white p-4 rounded-lg border">
             <div className="mb-3">
-              <h4 className="font-medium text-gray-700 mb-2">Project Overview (250 words max)</h4>
-              <div className="text-sm text-gray-600 mb-3">
-                <p>Please provide an overview including:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>Summary of key points and actions</li>
-                  <li>Project context and location</li>
-                  <li>Problem statement and proposed solution</li>
-                  <li>Direct contribution to selected Thematic Area</li>
+              <h4 className="font-medium text-gray-700 mb-2">Project Overview (250 words)</h4>
+              <div className="text-sm text-gray-600 mb-4">
+                <p>In this section, please provide an overview of the proposed project which should include the following information:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>A summary of the key points and actions of the initiative.</li>
+                  <li>The project context and project location.</li>
+                  <li>The issue/problem statement to be addressed (the problem/threat) and proposed approach/solution.</li>
+                  <li>How will this proposed project directly contribute to the selected Belize Fund Thematic Area (TA)</li>
                 </ul>
+                <p className="mt-3 text-red-600 font-medium">
+                  The Belize Fund will not fund projects that do not respond to or are not directly aligned with a TA.
+                </p>
               </div>
             </div>
             
@@ -509,7 +729,7 @@ const ConceptForm = () => {
               }}
               rows="8"
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="Describe your project overview here..."
+              placeholder="Provide your project overview here..."
             />
             {formik.touched.projectSummary && formik.errors.projectSummary && (
               <p className="text-red-500 text-sm mt-1">{formik.errors.projectSummary}</p>
@@ -533,13 +753,13 @@ const ConceptForm = () => {
           
           <div className="bg-white p-4 rounded-lg border">
             <div className="mb-3">
-              <h4 className="font-medium text-gray-700 mb-2">Goals and Objectives (200 words max)</h4>
-              <div className="text-sm text-gray-600 mb-3">
-                <p>Please describe:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
+              <h4 className="font-medium text-gray-700 mb-2">Goals and Objectives (200 words)</h4>
+              <div className="text-sm text-gray-600 mb-4">
+                <p>In this section, please list and describe the following:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
                   <li>What is the goal of the proposed project?</li>
-                  <li>What are the specific objectives?</li>
-                  <li>The potential longer-term impact of your project</li>
+                  <li>What are the specific objectives of the proposed project?</li>
+                  <li>The potential impact of the project – what might be the longer-term impact of your project?</li>
                 </ul>
               </div>
             </div>
@@ -576,13 +796,12 @@ const ConceptForm = () => {
           
           <div className="bg-white p-4 rounded-lg border">
             <div className="mb-3">
-              <h4 className="font-medium text-gray-700 mb-2">Outputs and Activities (500 words max)</h4>
-              <div className="text-sm text-gray-600 mb-3">
-                <p>Please provide a clear statement of what the project will accomplish:</p>
-                <ul className="list-disc list-inside mt-1 space-y-1">
-                  <li>Specific outputs the project aims to produce</li>
-                  <li>Specific activities the project will conduct</li>
-                  <li>How activities will lead to achieving the project goal</li>
+              <h4 className="font-medium text-gray-700 mb-2">Outputs and Activities (500 words)</h4>
+              <div className="text-sm text-gray-600 mb-4">
+                <p>This section should contain a clear and specific statement of what the proposed project will accomplish. Demonstrate how these activities will lead to the achievement of the project goal. This section should include:</p>
+                <ul className="list-disc list-inside mt-2 space-y-1">
+                  <li>The specific outputs that the project aims to produce. What outputs are the project intend to design and/or deliver?</li>
+                  <li>The specific activities that the project will conduct. How will the activities provide the desired outputs?</li>
                 </ul>
               </div>
             </div>
@@ -613,74 +832,27 @@ const ConceptForm = () => {
           </div>
 
           <div className="bg-white p-4 rounded-lg border space-y-6">
-            {/* Co-financing Table */}
-            {/* <div>
-              <h4 className="font-medium text-gray-700 mb-3">Contributing Organizations</h4>
-              <div className="overflow-x-auto">
-                <table className="min-w-full border border-gray-300">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Contributing Organizations</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Total Contribution (BZD)</th>
-                      <th className="border border-gray-300 px-4 py-2 text-left">Percentage (%)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {formik.values.coFinancingEntries.map((entry, index) => (
-                      <tr key={index}>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="text"
-                            value={entry.organization}
-                            onChange={(e) => {
-                              const newEntries = [...formik.values.coFinancingEntries]
-                              newEntries[index].organization = e.target.value
-                              formik.setFieldValue('coFinancingEntries', newEntries)
-                            }}
-                            className="w-full px-2 py-1 border border-gray-200 rounded"
-                            placeholder="Organization name"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">
-                          <input
-                            type="number"
-                            value={entry.contribution}
-                            onChange={(e) => {
-                              const newEntries = [...formik.values.coFinancingEntries]
-                              newEntries[index].contribution = parseFloat(e.target.value) || 0
-                              // Calculate percentage
-                              const total = totalProjectCost
-                              newEntries[index].percentage = total > 0 ? ((newEntries[index].contribution / total) * 100).toFixed(1) : 0
-                              formik.setFieldValue('coFinancingEntries', newEntries)
-                              
-                              // Update total co-financing
-                              const totalCoFin = newEntries.reduce((sum, e) => sum + e.contribution, 0)
-                              formik.setFieldValue('totalCoFinancing', totalCoFin)
-                            }}
-                            className="w-full px-2 py-1 border border-gray-200 rounded"
-                            placeholder="0"
-                          />
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2 text-center">
-                          {entry.percentage}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* Co-financing Input */}
+            <div>
+              <h4 className="font-medium text-gray-700 mb-3">Co-financing Information</h4>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Co-financing Amount (BZD)
+                  </label>
+                  <input
+                    type="number"
+                    {...formik.getFieldProps('totalCoFinancing')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    placeholder="0"
+                    min="0"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Enter the total amount of co-financing from all sources
+                  </p>
+                </div>
               </div>
-              
-              <button
-                type="button"
-                onClick={() => {
-                  const newEntries = [...formik.values.coFinancingEntries, { organization: '', contribution: 0, percentage: 0 }]
-                  formik.setFieldValue('coFinancingEntries', newEntries)
-                }}
-                className="mt-2 px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-              >
-                Add Co-financing Entry
-              </button>
-            </div> */}
+            </div>
 
             {/* Budget Breakdown */}
             <div>
@@ -781,6 +953,9 @@ const ConceptForm = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                   placeholder="Full name and signature"
                 />
+                {formik.touched.legalRepresentativeName && formik.errors.legalRepresentativeName && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.legalRepresentativeName}</p>
+                )}
               </div>
 
               <div>
@@ -792,37 +967,93 @@ const ConceptForm = () => {
                   {...formik.getFieldProps('declarationDate')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500"
                 />
+                {formik.touched.declarationDate && formik.errors.declarationDate && (
+                  <p className="text-red-500 text-sm mt-1">{formik.errors.declarationDate}</p>
+                )}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Required Documents Checklist */}
-        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-          <h4 className="font-medium text-gray-700 mb-3">Required Documentation Checklist</h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              <span>Certificate of Registration</span>
+        {/* Important Note Section */}
+        <div className="bg-red-50 p-6 rounded-lg border border-red-200 mb-6">
+          <h3 className="text-xl font-semibold text-red-800 mb-4">
+            IMPORTANT NOTE
+          </h3>
+          
+          <div className="text-red-700 space-y-4">
+            <p>
+              A concept paper is not a vague exploration of an idea, but a condensed version of a proposal. 
+              It is expected that you have already thought through your proposed project, the budget included, 
+              and you are presenting a summary.
+            </p>
+            
+            <div>
+              <p className="mb-2">
+                The concept paper should not exceed 5 pages (letter size) including the cover page and any charts or diagrams. 
+                Use font: Times New Roman, size: 11. Single or double space is acceptable.
+              </p>
             </div>
-            <div className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              <span>Articles of Association/Business Extract</span>
+
+            <div>
+              <p className="font-medium mb-2">
+                Belize Fund does not have budget limits for each category, but all proposals must adhere to the following criteria:
+              </p>
+              <div className="ml-4">
+                <p className="font-medium mb-2">Salaries:</p>
+                <ul className="list-decimal list-inside space-y-1 ml-4">
+                  <li>100% of staff salaries can be covered by the Belize Fund, provided that the position is fully and exclusively involved in the implementation of the Belize Fund project activities.</li>
+                  <li>Up to 60% of staff salaries can be covered by Belize Fund, provided that they are directly involved in the implementation of Belize Fund project activities.</li>
+                  <li>Up to 20% of administrative staff salaries, such as Executive Director, Finance personnel, drivers, accountants, and HR etc, can be covered by the Belize Fund.</li>
+                  <li>Up to 10% of the overall project budget can be considered under administrative costs such rent, utilities, office supplies, courier etc (overhead). Up to 15% if using an intermediary.</li>
+                  <li>The other budget categories do not have limits, for now, but will only be accepted if they are directly supporting a specific activity.</li>
+                </ul>
+              </div>
             </div>
-            <div className="flex items-center">
-              <input type="checkbox" className="mr-2" />
-              <span>Certificate of Good Standing (BCAAR)</span>
+
+            <div>
+              <p className="font-medium mb-2">
+                Co-financing under the GAP is required based on the size or category of an award:
+              </p>
+              <ul className="list-decimal list-inside space-y-1 ml-4">
+                <li>There is no co-financing requirement for community small grants of up to BZD $75,000.00</li>
+                <li>Medium grants between BZ$75,000.00 to BZ$150,000.00 require that 10-25% of the total project cost be co-financed by the applicant or collaborating partners.</li>
+                <li>Large grants above BZ$150,000.00 require that between 25-50% of the total project cost be co-financed by the applicant and/or collaborating partners.</li>
+              </ul>
             </div>
+
+            <p>
+              Private sector applicants will be required to provide a 1:1 co-financing. Co-financing can be in the form of cash or in-kind (combined).
+            </p>
           </div>
         </div>
 
+        {/* Important Note Acknowledgment */}
+        <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+          <label className="flex items-start">
+            <input
+              type="checkbox"
+              checked={formik.values.hasReadImportantNote}
+              onChange={() => formik.setFieldValue('hasReadImportantNote', !formik.values.hasReadImportantNote)}
+              className="mr-2 mt-1"
+            />
+            <span className="text-sm text-red-700">
+              I have read and understood the Important Note in the Concept Paper template, and I confirm that all required documentation has been uploaded.
+            </span>
+          </label>
+        </div>
+
         {/* Form Actions */}
-        <div className="flex justify-between items-center pt-6 border-t">
-          <div className="text-sm text-gray-500">
-            Submit to: projectofficer@belizefundmanagement.bz
-          </div>
+        <div className="flex justify-end items-center pt-6 border-t space-x-4">
+          {/* Debug info - remove in production */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="text-xs text-gray-500">
+              Valid: {formik.isValid ? '✓' : '✗'} | 
+              Files: {formik.values.hasRegistrationCert ? '✓' : '✗'}{formik.values.hasArticles ? '✓' : '✗'}{formik.values.hasCertGoodStanding ? '✓' : '✗'} | 
+              Note: {formik.values.hasReadImportantNote ? '✓' : '✗'}
+            </div>
+          )}
           
-                  <div className="flex space-x-4">
           <button
             type="button"
             onClick={() => {
@@ -830,21 +1061,32 @@ const ConceptForm = () => {
               toast.success('Form saved as draft!')
             }}
             className="flex items-center px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors"
+            disabled={isSubmitting}
           >
             <Save className="h-4 w-4 mr-2" />
             Save Draft
           </button>
-
-
           
           <button
             type="submit"
-            className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            disabled={!(formik.values.hasRegistrationCert && formik.values.hasArticles && formik.values.hasCertGoodStanding && formik.values.hasReadImportantNote && formik.isValid) || isSubmitting}
+            className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            <Send className="h-4 w-4 mr-2" />
-            Submit Concept Paper
+            {isSubmitting ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Submitting...
+              </>
+            ) : (
+              <>
+                <Send className="h-4 w-4 mr-2" />
+                Submit Concept Paper
+              </>
+            )}
           </button>
-        </div>
         </div>
       </form>
     </div>
