@@ -1046,13 +1046,7 @@ const ConceptForm = () => {
         {/* Form Actions */}
         <div className="flex justify-end items-center pt-6 border-t space-x-4">
           {/* Debug info - remove in production */}
-          {process.env.NODE_ENV === 'development' && (
-            <div className="text-xs text-gray-500">
-              Valid: {formik.isValid ? '✓' : '✗'} | 
-              Files: {formik.values.hasRegistrationCert ? '✓' : '✗'}{formik.values.hasArticles ? '✓' : '✗'}{formik.values.hasCertGoodStanding ? '✓' : '✗'} | 
-              Note: {formik.values.hasReadImportantNote ? '✓' : '✗'}
-            </div>
-          )}
+        
           
           <button
             type="button"
