@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import MultiStepForm from './components/MultiStepForm'
 import ConceptForm from './components/ConceptForm'
 import Navigation from './components/Navigation'
+import CommunityProposalForm from './components/CommunityProposalForm'
 
 function App() {
   return (
@@ -11,8 +12,9 @@ function App() {
         <Navigation />
         <main className="min-h-screen bg-gray-50 py-8">
           <Routes>
+            <Route path="/proposal-form" element={<MultiStepForm />} />
+            <Route path="/community-proposal-form" element={<CommunityProposalForm />} />
             <Route path="/" element={<ConceptForm />} />
-            {/* <Route path="/concept-form" element={<ConceptForm />} /> */}
           </Routes>
         </main>
 

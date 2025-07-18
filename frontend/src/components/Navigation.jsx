@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { FileText, Lightbulb } from 'lucide-react'
+import { FileText, Lightbulb, Users } from 'lucide-react'
 
 const Navigation = () => {
   const location = useLocation()
@@ -28,17 +28,29 @@ const Navigation = () => {
               Concept Paper
             </Link>
             
-            {/* <Link
-              to="/concept-form"
+            <Link
+              to="/proposal-form"
               className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                location.pathname === '/concept-form'
+                location.pathname === '/proposal-form'
                   ? 'bg-green-100 text-green-700'
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
               }`}
             >
               <Lightbulb className="h-4 w-4 mr-2" />
-              Concept Paper
-            </Link> */}
+              GAP Application
+            </Link>
+
+            <Link
+              to="/community-proposal-form"
+              className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                location.pathname === '/community-proposal-form'
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Users className="h-4 w-4 mr-2" />
+              Community Proposal
+            </Link>
           </div>
         </div>
       </div>

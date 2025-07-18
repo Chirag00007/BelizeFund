@@ -1,42 +1,94 @@
-import { useState, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { yupResolver } from '@hookform/resolvers/yup'
-import toast from 'react-hot-toast'
-import { Save, Send, ArrowLeft, ArrowRight, FileText } from 'lucide-react'
+import { useState, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { yupResolver } from "@hookform/resolvers/yup";
+import toast from "react-hot-toast";
+import { Save, Send, ArrowLeft, ArrowRight, FileText } from "lucide-react";
 
-import StepIndicator from './StepIndicator'
-import { getStepSchema } from '../validation/schemas'
-import { applicationService } from '../services/applicationService'
+import StepIndicator from "./StepIndicator";
+import { getStepSchema } from "../validation/schemas";
+import { applicationService } from "../services/applicationService";
 
-// Import new GAP step components
-import Step1FrontPage from './steps/Step1FrontPage'
-import Step2BackgroundInfo from './steps/Step2BackgroundInfo'
-import Step3ProjectGoals from './steps/Step3ProjectGoals'
-import Step4ImplementationPlan from './steps/Step4ImplementationPlan'
-import Step5RiskScreening from './steps/Step5RiskScreening'
-import Step6MonitoringEvaluation from './steps/Step6MonitoringEvaluation'
-import Step7Sustainability from './steps/Step7Sustainability'
-import Step8Budget from './steps/Step8Budget'
-import Step9Attachments from './steps/Step9Attachments'
+// Import Community Proposal step components
+import Step1FrontPage from "./steps/Step1FrontPage";
+import Step2BackgroundInfo from "./steps/Step2BackgroundInfo";
+import Step3ProjectGoals from "./steps/Step3ProjectGoals";
+import Step4ImplementationPlan from "./steps/Step4ImplementationPlan";
+import Step5RiskScreening from "./steps/Step5RiskScreening";
+import Step6MonitoringEvaluation from "./steps/Step6MonitoringEvaluation";
+import Step7Sustainability from "./steps/Step7Sustainability";
+import Step8Budget from "./steps/Step8Budget";
+import Step9RiskManagement from "./steps/Step9RiskManagement";
+import Step10Attachments from "./steps/Step10Attachments";
 
 const STEPS = [
-  { id: 1, title: 'Front Page', component: Step1FrontPage, description: 'Organization details and project overview' },
-  { id: 2, title: 'Background Information', component: Step2BackgroundInfo, description: 'Project summary and organizational background' },
-  { id: 3, title: 'Project Goals & Objectives', component: Step3ProjectGoals, description: 'Goals, objectives and logical framework' },
-  { id: 4, title: 'Implementation & Indicators', component: Step4ImplementationPlan, description: 'Implementation plan and Belize Fund Management indicators' },
-  { id: 5, title: 'Risk Screening', component: Step5RiskScreening, description: 'Environmental and social risk assessment' },
-  { id: 6, title: 'Monitoring & Evaluation', component: Step6MonitoringEvaluation, description: 'M&E plan and framework' },
-  { id: 7, title: 'Sustainability', component: Step7Sustainability, description: 'Sustainability and replication plans' },
-  { id: 8, title: 'Budget', component: Step8Budget, description: 'Detailed budget breakdown' },
-  { id: 9, title: 'Attachments', component: Step9Attachments, description: 'Supporting documents and declarations' },
-]
+  {
+    id: 1,
+    title: "Front Page",
+    component: Step1FrontPage,
+    description: "Organization details and project overview",
+  },
+  {
+    id: 2,
+    title: "Background Information",
+    component: Step2BackgroundInfo,
+    description: "Project summary and organizational background",
+  },
+  {
+    id: 3,
+    title: "Project Goals & Objectives",
+    component: Step3ProjectGoals,
+    description: "Goals, objectives and logical framework",
+  },
+  {
+    id: 4,
+    title: "Implementation & Indicators",
+    component: Step4ImplementationPlan,
+    description: "Implementation plan and Belize Fund Management indicators",
+  },
+  {
+    id: 5,
+    title: "Risk Screening",
+    component: Step5RiskScreening,
+    description: "Environmental and social risk assessment",
+  },
+  {
+    id: 6,
+    title: "Monitoring & Evaluation",
+    component: Step6MonitoringEvaluation,
+    description: "M&E plan and framework",
+  },
+  {
+    id: 7,
+    title: "Sustainability",
+    component: Step7Sustainability,
+    description: "Sustainability and replication plans",
+  },
+  {
+    id: 8,
+    title: "Budget",
+    component: Step8Budget,
+    description: "Detailed budget breakdown",
+  },
+  {
+    id: 9,
+    title: "Risk Management",
+    component: Step9RiskManagement,
+    description: "Stakeholder engagement, gender action, and risk management plans",
+  },
+  {
+    id: 10,
+    title: "Attachments",
+    component: Step10Attachments,
+    description: "Supporting documents and declarations",
+  },
+];
 
-const MultiStepForm = () => {
-  const [currentStep, setCurrentStep] = useState(1)
-  const [completedSteps, setCompletedSteps] = useState([])
-  const [applicationId, setApplicationId] = useState(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
+const CommunityProposalForm = () => {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [completedSteps, setCompletedSteps] = useState([]);
+  const [applicationId, setApplicationId] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const {
     register,
@@ -46,110 +98,123 @@ const MultiStepForm = () => {
     getValues,
     reset,
     trigger,
-    watch
+    watch,
   } = useForm({
     resolver: yupResolver(getStepSchema(currentStep)),
-    mode: 'onChange'
-  })
+    mode: "onChange",
+  });
 
   const saveProgress = async (stepData = null) => {
     try {
-      setIsSaving(true)
-      const formData = stepData || getValues()
-      
+      setIsSaving(true);
+      const formData = stepData || getValues();
+
       if (applicationId) {
         // Update existing application
         await applicationService.saveProgress(applicationId, {
           currentStep,
           stepData: formData,
-          completedSteps
-        })
+          completedSteps,
+        });
       } else {
         // Create new application
-        const newApplication = await applicationService.createApplication(formData)
-        setApplicationId(newApplication._id)
+        const newApplication = await applicationService.createApplication(
+          formData
+        );
+        setApplicationId(newApplication._id);
       }
-      
-      toast.success('Progress saved successfully!')
+
+      toast.success("Progress saved successfully!");
     } catch (error) {
-      toast.error('Failed to save progress')
-      console.error('Error saving progress:', error)
+      toast.error("Failed to save progress");
+      console.error("Error saving progress:", error);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const nextStep = async () => {
-    const isValid = await trigger()
+    const isValid = await trigger();
     if (!isValid) {
-      toast.error('Please fix the errors before proceeding')
-      return
+      toast.error("Please fix the errors before proceeding");
+      return;
     }
 
-    const formData = getValues()
-    await saveProgress(formData)
-    
+    const formData = getValues();
+    await saveProgress(formData);
+
     // Mark current step as completed
     if (!completedSteps.includes(currentStep)) {
-      setCompletedSteps(prev => [...prev, currentStep])
+      setCompletedSteps((prev) => [...prev, currentStep]);
     }
-    
+
     if (currentStep < STEPS.length) {
-      setCurrentStep(prev => prev + 1)
+      setCurrentStep((prev) => prev + 1);
     }
-  }
+  };
 
   const prevStep = () => {
     if (currentStep > 1) {
-      setCurrentStep(prev => prev - 1)
+      setCurrentStep((prev) => prev - 1);
     }
-  }
+  };
 
   const goToStep = (stepNumber) => {
     if (stepNumber <= Math.max(...completedSteps, currentStep)) {
-      setCurrentStep(stepNumber)
+      setCurrentStep(stepNumber);
     }
-  }
+  };
 
   const submitApplication = async () => {
     try {
-      setIsLoading(true)
-      const formData = getValues()
-      
+      setIsLoading(true);
+      const formData = getValues();
+
       let currentApplicationId = applicationId;
-      
+
       // If no applicationId, save progress first to create one
       if (!currentApplicationId) {
-        const newApplication = await applicationService.createApplication(formData);
+        const newApplication = await applicationService.createApplication(
+          formData
+        );
         currentApplicationId = newApplication._id;
         setApplicationId(currentApplicationId);
       }
-      
-      const result = await applicationService.submitApplication(currentApplicationId, formData)
-      
-      if (result.zohoSuccess) {
-        toast.success('Application submitted successfully and record created in Zoho Creator! Thank you for your submission.')
-      } else if (result.zohoError) {
-        toast.success('Application submitted successfully! Thank you for your submission.')
-        toast.error(`Zoho Creator: ${result.zohoError}`)
-      } else {
-        toast.success('Application submitted successfully! Thank you for your submission.')
-      }
-      
-      // Reset form to initial state after successful submission
-      reset()
-      setCurrentStep(1)
-      setCompletedSteps([])
-      setApplicationId(null)
-    } catch (error) {
-      toast.error('Failed to submit application')
-      console.error('Error submitting application:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
-  const CurrentStepComponent = STEPS[currentStep - 1]?.component
+      const result = await applicationService.submitApplication(
+        currentApplicationId,
+        formData
+      );
+
+      if (result.zohoSuccess) {
+        toast.success(
+          "Community Proposal submitted successfully and record created in Zoho Creator! Thank you for your submission."
+        );
+      } else if (result.zohoError) {
+        toast.success(
+          "Community Proposal submitted successfully! Thank you for your submission."
+        );
+        toast.error(`Zoho Creator: ${result.zohoError}`);
+      } else {
+        toast.success(
+          "Community Proposal submitted successfully! Thank you for your submission."
+        );
+      }
+
+      // Reset form to initial state after successful submission
+      reset();
+      setCurrentStep(1);
+      setCompletedSteps([]);
+      setApplicationId(null);
+    } catch (error) {
+      toast.error("Failed to submit application");
+      console.error("Error submitting application:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const CurrentStepComponent = STEPS[currentStep - 1]?.component;
 
   if (isLoading) {
     return (
@@ -159,7 +224,7 @@ const MultiStepForm = () => {
           <p className="text-gray-600 text-lg">Loading application...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -172,8 +237,12 @@ const MultiStepForm = () => {
               <FileText className="h-8 w-8 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Belize Fund Management GAP Application</h1>
-              <p className="text-gray-600 mt-1">Grant Award Program Proposal Template</p>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Belize Fund Community Grants Proposal
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Community Grants Proposal Template
+              </p>
             </div>
           </div>
           <div className="text-right">
@@ -188,7 +257,7 @@ const MultiStepForm = () => {
       <div className="bg-white shadow-lg border-x border-gray-200">
         {/* Progress Indicator */}
         <div className="bg-gray-50 px-8 py-6 border-b border-gray-200 overflow-hidden">
-          <StepIndicator 
+          <StepIndicator
             steps={STEPS}
             currentStep={currentStep}
             completedSteps={completedSteps}
@@ -213,7 +282,7 @@ const MultiStepForm = () => {
               </div>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
+              <div
                 className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(currentStep / STEPS.length) * 100}%` }}
               ></div>
@@ -246,7 +315,7 @@ const MultiStepForm = () => {
                     <span>Previous</span>
                   </button>
                 )}
-                
+
                 <button
                   type="button"
                   onClick={() => saveProgress()}
@@ -254,7 +323,7 @@ const MultiStepForm = () => {
                   className="flex items-center space-x-2 px-6 py-3 bg-green-100 hover:bg-green-200 text-green-700 font-medium rounded-lg transition-colors duration-200 disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
-                  <span>{isSaving ? 'Saving...' : 'Save Progress'}</span>
+                  <span>{isSaving ? "Saving..." : "Save Progress"}</span>
                 </button>
               </div>
 
@@ -275,7 +344,9 @@ const MultiStepForm = () => {
                     className="flex items-center space-x-2 px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
                   >
                     <Send className="h-4 w-4" />
-                    <span>{isLoading ? 'Submitting...' : 'Submit Application'}</span>
+                    <span>
+                      {isLoading ? "Submitting..." : "Submit Community Proposal"}
+                    </span>
                   </button>
                 )}
               </div>
@@ -283,20 +354,21 @@ const MultiStepForm = () => {
           </form>
         </div>
       </div>
-      
+
       {/* Footer */}
       <div className="bg-gray-50 rounded-b-xl shadow-lg border border-t-0 border-gray-200 px-8 py-4">
         <div className="flex items-center justify-between text-sm text-gray-600">
           <div>
-            All fields marked with <span className="text-red-500">*</span> are required
+            All fields marked with <span className="text-red-500">*</span> are
+            required
           </div>
           <div>
-            Contact: projectofficer@belizefundmanagement.bz for assistance
+            Contact: projectofficer@belizefund.bz for assistance
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default MultiStepForm 
+export default CommunityProposalForm;

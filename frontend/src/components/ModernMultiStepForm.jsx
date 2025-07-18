@@ -257,35 +257,134 @@ const ModernMultiStepForm = () => {
       setIsLoading(true)
       const formData = getValues()
       
+      // Collect file inputs from the form data and format them for submission
+      const filesToUpload = [];
+      // Example: If 'proofOfRegistration' is a file input field
+      if (formData.proofOfRegistration instanceof File) {
+        filesToUpload.push({
+          file: formData.proofOfRegistration,
+          zohoFieldName: 'Proof_of_Registration_for_Organization',
+          fileName: formData.proofOfRegistration.name,
+        });
+      }
+      // Add other file fields here following the same pattern:
+      // Example for ESRMP:
+      if (formData.environmentalSocialRiskManagementPlan instanceof File) {
+        filesToUpload.push({
+          file: formData.environmentalSocialRiskManagementPlan,
+          zohoFieldName: 'Environmental_and_Social_Risk_Management_Plan_ESRMP',
+          fileName: formData.environmentalSocialRiskManagementPlan.name,
+        });
+      }
+      // Example for GAP:
+      if (formData.grantAgreementProposal instanceof File) {
+        filesToUpload.push({
+          file: formData.grantAgreementProposal,
+          zohoFieldName: 'Grant_Agreement_Proposal_GAP',
+          fileName: formData.grantAgreementProposal.name,
+        });
+      }
+      // Example for SEP:
+      if (formData.stakeholderEngagementPlan instanceof File) {
+        filesToUpload.push({
+          file: formData.stakeholderEngagementPlan,
+          zohoFieldName: 'Stakeholder_Engagement_Plan_SEP',
+          fileName: formData.stakeholderEngagementPlan.name,
+        });
+      }
+      // Example for Legal documents
+      if (formData.certificateOfIncorporation instanceof File) {
+        filesToUpload.push({
+          file: formData.certificateOfIncorporation,
+          zohoFieldName: 'Certificate_of_Incorporation',
+          fileName: formData.certificateOfIncorporation.name,
+        });
+      }
+      if (formData.articlesOfAssociation instanceof File) {
+        filesToUpload.push({
+          file: formData.articlesOfAssociation,
+          zohoFieldName: 'Articles_of_Association',
+          fileName: formData.articlesOfAssociation.name,
+        });
+      }
+      if (formData.boardResolutionAuthorization instanceof File) {
+        filesToUpload.push({
+          file: formData.boardResolutionAuthorization,
+          zohoFieldName: 'Board_Resolution_Authorization',
+          fileName: formData.boardResolutionAuthorization.name,
+        });
+      }
+      if (formData.threeYearsFinancialAuditReport instanceof File) {
+        filesToUpload.push({
+          file: formData.threeYearsFinancialAuditReport,
+          zohoFieldName: 'Three_Years_Financial_Audit_Report',
+          fileName: formData.threeYearsFinancialAuditReport.name,
+        });
+      }
+      if (formData.latestBankStatement instanceof File) {
+        filesToUpload.push({
+          file: formData.latestBankStatement,
+          zohoFieldName: 'Latest_Bank_Statement',
+          fileName: formData.latestBankStatement.name,
+        });
+      }
+      if (formData.financialSustainabilityPlan instanceof File) {
+        filesToUpload.push({
+          file: formData.financialSustainabilityPlan,
+          zohoFieldName: 'Financial_Sustainability_Plan',
+          fileName: formData.financialSustainabilityPlan.name,
+        });
+      }
+      if (formData.environmentalSocialImpactAssessment instanceof File) {
+        filesToUpload.push({
+          file: formData.environmentalSocialImpactAssessment,
+          zohoFieldName: 'Environmental_Social_Impact_Assessment',
+          fileName: formData.environmentalSocialImpactAssessment.name,
+        });
+      }
+      if (formData.digitalSignatureImage instanceof File) {
+        filesToUpload.push({
+          file: formData.digitalSignatureImage,
+          zohoFieldName: 'Digital_Signature_Image',
+          fileName: formData.digitalSignatureImage.name,
+        });
+      }
+
+      // Add the files to the form data for submission
+      formData.files = filesToUpload;
+
       let currentApplicationId = applicationId;
       
       // If no applicationId, save progress first to create one
       if (!currentApplicationId) {
         console.log('No applicationId, saving progress first...');
+        // The createApplication function might not be used if we go directly to Zoho
+        // Consider if createApplication is still necessary for local storage or other reasons
+        // For now, assuming it creates a local record if needed
         const newApplication = await applicationService.createApplication(formData);
         currentApplicationId = newApplication._id;
         setApplicationId(currentApplicationId);
         console.log('Created new application with ID:', currentApplicationId);
       }
       
-      console.log('Calling applicationService.submitApplication...');
-      const result = await applicationService.submitApplication(currentApplicationId, formData)
-      console.log('submitApplication result:', result);
+      console.log('Calling applicationService.submitGapProposal...');
+      const result = await applicationService.submitGapProposal(formData)
+      console.log('submitGapProposal result:', result);
       
-      if (result.zohoSuccess) {
-        toast.success('Application submitted successfully and record created in Zoho Creator!')
-      } else if (result.zohoError) {
-        toast.success('Application submitted successfully!')
-        toast.error(`Zoho Creator: ${result.zohoError}`)
+      if (result.success) {
+        toast.success('GAP Proposal submitted successfully and record created in Zoho Creator!')
+      } else if (result.error) {
+        toast.success('GAP Proposal submitted, but with errors:')
+        toast.error(`Zoho Creator: ${result.message}`)
       } else {
-        toast.success('Application submitted successfully!')
+        toast.success('GAP Proposal submitted successfully!')
       }
       
       navigate('/applications')
     } catch (error) {
       console.error('Error in submitApplication:', error);
-      toast.error('Failed to submit application')
-      console.error('Error submitting application:', error)
+      toast.error('Failed to submit GAP Proposal')
+      console.error('Error submitting GAP Proposal:', error)
     } finally {
       setIsLoading(false)
     }

@@ -23,9 +23,10 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
       {/* Header */}
       <div className="text-center border-b border-gray-200 pb-6">
         <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          Belize Fund Management
+          Belize Fund For A Sustainable Future (Belize Fund)
         </h3>
-        <p className="text-lg text-gray-600">Grant Award Program Proposal - Front Page</p>
+        <p className="text-lg text-gray-600">Community Grants Proposal Template - Front Page</p>
+        <p className="text-sm text-gray-500 mt-2">(max 1 page)</p>
       </div>
 
       {/* Lead Organization Section */}
@@ -42,7 +43,7 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
               type="text"
               {...register('projectTitle')}
               className="form-input"
-              placeholder="Enter project title (keep it concise)"
+              placeholder="Please limit to 15 words or less"
               maxLength="100"
             />
             {errors.projectTitle && (
@@ -72,7 +73,7 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
               {...register('organizationAddress')}
               className="form-input"
               rows="3"
-              placeholder="Headquarters/office address"
+              placeholder="Headquarters/office"
             />
             {errors.organizationAddress && (
               <p className="form-error">{errors.organizationAddress.message}</p>
@@ -85,7 +86,7 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
               <option value="">Select organization type</option>
               <option value="NGO">NGO</option>
               <option value="Private">Private</option>
-              <option value="Community-based Organization">Community-based Organization/Association</option>
+              <option value="Community-based Organization">Community-based organization/association</option>
               <option value="Government Agency">Government Agency</option>
               <option value="Academic Institution">Academic Institution</option>
               <option value="Other">Other</option>
@@ -96,11 +97,12 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
           </div>
 
           <div>
-            <label className="form-label">Date of Incorporation *</label>
+            <label className="form-label">Date of Incorporation of Organization *</label>
             <input
               type="date"
               {...register('dateOfIncorporation')}
               className="form-input"
+              placeholder="(mm/dd/yyyy)"
             />
             {errors.dateOfIncorporation && (
               <p className="form-error">{errors.dateOfIncorporation.message}</p>
@@ -143,27 +145,25 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
             )}
           </div>
 
-          <div>
-            <label className="form-label">Email *</label>
-            <input
-              type="email"
-              {...register('contactEmail')}
-              className="form-input"
-              placeholder="primary.contact@organization.com"
-            />
+          <div className="md:col-span-2">
+            <label className="form-label">Contact Info (Email and Telephone) *</label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <input
+                type="email"
+                {...register('contactEmail')}
+                className="form-input"
+                placeholder="primary.contact@organization.com"
+              />
+              <input
+                type="tel"
+                {...register('contactTelephone')}
+                className="form-input"
+                placeholder="Include country code (e.g., +501-123-4567)"
+              />
+            </div>
             {errors.contactEmail && (
               <p className="form-error">{errors.contactEmail.message}</p>
             )}
-          </div>
-
-          <div>
-            <label className="form-label">Telephone *</label>
-            <input
-              type="tel"
-              {...register('contactTelephone')}
-              className="form-input"
-              placeholder="Include country code (e.g., +501-123-4567)"
-            />
             {errors.contactTelephone && (
               <p className="form-error">{errors.contactTelephone.message}</p>
             )}
@@ -185,6 +185,7 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
               type="date"
               {...register('proposedStartDate')}
               className="form-input"
+              placeholder="(mm/dd/yyyy)"
             />
             {errors.proposedStartDate && (
               <p className="form-error">{errors.proposedStartDate.message}</p>
@@ -197,6 +198,7 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
               type="date"
               {...register('expectedEndDate')}
               className="form-input"
+              placeholder="(mm/dd/yyyy)"
             />
             {errors.expectedEndDate && (
               <p className="form-error">{errors.expectedEndDate.message}</p>
@@ -204,81 +206,68 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
           </div>
 
           <div>
-            <label className="form-label">Duration (Months)</label>
-            <input
-              type="number"
-              value={projectDuration}
-              className="form-input bg-gray-100"
-              readOnly
-              placeholder="Auto-calculated"
-            />
-            {projectDuration > 36 && (
-              <p className="text-amber-600 text-sm mt-1">
-                ⚠️ Projects longer than 36 months may require additional justification
-              </p>
-            )}
+            <label className="form-label">Project Duration</label>
+            <div className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={projectDuration}
+                readOnly
+                className="form-input bg-gray-100"
+                placeholder="Months"
+              />
+              <span className="text-gray-600">Months</span>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Project Location Section */}
-      <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
+      <div className="bg-orange-50 p-6 rounded-lg border border-orange-200">
         <div className="flex items-center mb-4">
-          <MapPin className="h-6 w-6 text-yellow-600 mr-2" />
+          <MapPin className="h-6 w-6 text-orange-600 mr-2" />
           <h4 className="text-xl font-semibold text-gray-900">4. Project Location</h4>
         </div>
         
         <div className="space-y-4">
-          <div>
-            <p className="text-sm text-gray-600 mb-3">
-              Belize Fund Management can fund projects in any part of Belize (coastal, marine, and terrestrial) 
-              provided that there is a direct link to and impact on the Belize Fund Management Thematic Areas and/or key priorities.
-            </p>
-          </div>
+          <p className="text-sm text-gray-600 mb-4">
+            The Belize Fund can fund projects in any part of Belize (coastal, marine, and terrestrial) 
+            provided that there is a direct link to and impact on the Belize Fund Thematic Areas and/or key priorities.
+          </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="form-label">Primary Location *</label>
-              <select {...register('primaryLocation')} className="form-input">
-                <option value="">Select primary location</option>
-                <option value="Corozal District">Corozal District</option>
-                <option value="Orange Walk District">Orange Walk District</option>
-                <option value="Belize District">Belize District</option>
-                <option value="Cayo District">Cayo District</option>
-                <option value="Stann Creek District">Stann Creek District</option>
-                <option value="Toledo District">Toledo District</option>
-                <option value="Marine Areas">Marine Areas</option>
-                <option value="Multiple Districts">Multiple Districts</option>
-              </select>
-              {errors.primaryLocation && (
-                <p className="form-error">{errors.primaryLocation.message}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="form-label">Project Environment *</label>
-              <select {...register('projectEnvironment')} className="form-input">
-                <option value="">Select environment type</option>
-                <option value="Coastal">Coastal</option>
-                <option value="Marine">Marine</option>
-                <option value="Terrestrial">Terrestrial</option>
-                <option value="Coastal-Marine">Coastal-Marine</option>
-                <option value="Terrestrial-Coastal">Terrestrial-Coastal</option>
-                <option value="All Environments">All Environments</option>
-              </select>
-              {errors.projectEnvironment && (
-                <p className="form-error">{errors.projectEnvironment.message}</p>
-              )}
-            </div>
+          <div>
+            <label className="form-label">Primary Project Location *</label>
+            <input
+              type="text"
+              {...register('primaryLocation')}
+              className="form-input"
+              placeholder="e.g., Belize City, Caye Caulker, Toledo District"
+            />
+            {errors.primaryLocation && (
+              <p className="form-error">{errors.primaryLocation.message}</p>
+            )}
           </div>
 
           <div>
-            <label className="form-label">Detailed Location Description *</label>
+            <label className="form-label">Project Environment Type *</label>
+            <select {...register('projectEnvironment')} className="form-input">
+              <option value="">Select environment type</option>
+              <option value="Coastal">Coastal</option>
+              <option value="Marine">Marine</option>
+              <option value="Terrestrial">Terrestrial</option>
+              <option value="Mixed">Mixed (Multiple environments)</option>
+            </select>
+            {errors.projectEnvironment && (
+              <p className="form-error">{errors.projectEnvironment.message}</p>
+            )}
+          </div>
+
+          <div>
+            <label className="form-label">Detailed Location Description</label>
             <textarea
               {...register('detailedLocationDescription')}
               className="form-input"
-              rows="4"
-              placeholder="Provide specific details about project location, including communities, protected areas, or specific sites that will be impacted"
+              rows="3"
+              placeholder="Provide specific details about the project location, including coordinates if applicable"
             />
             {errors.detailedLocationDescription && (
               <p className="form-error">{errors.detailedLocationDescription.message}</p>
@@ -288,14 +277,20 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
       </div>
 
       {/* Project Budget Summary Section */}
-      <div className="bg-red-50 p-6 rounded-lg border border-red-200">
+      <div className="bg-indigo-50 p-6 rounded-lg border border-indigo-200">
         <div className="flex items-center mb-4">
-          <DollarSign className="h-6 w-6 text-red-600 mr-2" />
+          <DollarSign className="h-6 w-6 text-indigo-600 mr-2" />
           <h4 className="text-xl font-semibold text-gray-900">5. Project Budget Summary</h4>
         </div>
         
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 mb-4">
+            Please provide a list of partner organizations and the total contribution towards the project. 
+            Refer to the Belize Fund Award Category of the Call for Proposals for guidance on budget and co-financing. 
+            Include all cash and in-kind contributions made by the organization(s).
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="form-label">Total Project Cost (BZD) *</label>
               <input
@@ -312,7 +307,7 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
             </div>
 
             <div>
-              <label className="form-label">Amount Requested from Belize Fund Management (BZD) *</label>
+              <label className="form-label">Amount Requested from Belize Fund (BZD) *</label>
               <input
                 type="number"
                 {...register('amountRequested')}
@@ -325,24 +320,9 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
                 <p className="form-error">{errors.amountRequested.message}</p>
               )}
             </div>
-          </div>
 
-          <div>
-            <label className="form-label">Co-financing Sources and Amounts</label>
-            <textarea
-              {...register('coFinancingSources')}
-              className="form-input"
-              rows="4"
-              placeholder="List all partner organizations and their cash/in-kind contributions. Include organization name, contribution type (cash/in-kind), and amount."
-            />
-            <p className="text-sm text-gray-500 mt-1">
-              Include all cash and in-kind contributions made by your organization and partners
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="form-label">Total Co-financing (BZD)</label>
+              <label className="form-label">Total Co-Financing (BZD) *</label>
               <input
                 type="number"
                 {...register('totalCoFinancing')}
@@ -351,37 +331,25 @@ const Step1FrontPage = ({ register, errors, setValue, getValues, watch }) => {
                 step="0.01"
                 min="0"
               />
-            </div>
-
-            <div>
-              <label className="form-label">Co-financing Percentage</label>
-              <input
-                type="text"
-                value={watch('totalProjectCost') && watch('totalCoFinancing') 
-                  ? `${((watch('totalCoFinancing') / watch('totalProjectCost')) * 100).toFixed(1)}%`
-                  : '0%'
-                }
-                className="form-input bg-gray-100"
-                readOnly
-              />
-              <p className="text-sm text-gray-500 mt-1">
-                Higher co-financing percentages strengthen applications
-              </p>
+              {errors.totalCoFinancing && (
+                <p className="form-error">{errors.totalCoFinancing.message}</p>
+              )}
             </div>
           </div>
-        </div>
-      </div>
 
-      {/* Important Notes Section */}
-      <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-        <h4 className="text-lg font-semibold text-gray-900 mb-3">Important Notes</h4>
-        <ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
-          <li>Refer to the accepted concept paper when completing this proposal</li>
-          <li>Visit the Belize Fund Management website for general information</li>
-          <li>Review the Call for Proposals for specific requirements</li>
-          <li>Ensure you meet all eligibility criteria before submitting</li>
-          <li>Contact projectofficer@belizefundmanagement.bz for specific questions</li>
-        </ul>
+          <div>
+            <label className="form-label">Partner Organizations and Contributions</label>
+            <textarea
+              {...register('partnerOrganizations')}
+              className="form-input"
+              rows="4"
+              placeholder="List partner organizations and their contributions (cash and in-kind) to the project"
+            />
+            {errors.partnerOrganizations && (
+              <p className="form-error">{errors.partnerOrganizations.message}</p>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )

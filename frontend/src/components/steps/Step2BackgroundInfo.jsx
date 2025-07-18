@@ -24,7 +24,7 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center border-b border-gray-200 pb-6">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">Background Information</h3>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">B. Background Information</h3>
         <p className="text-gray-600">Provide comprehensive information about your project and organization</p>
       </div>
 
@@ -33,7 +33,7 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <FileText className="h-6 w-6 text-blue-600 mr-2" />
-            <h4 className="text-xl font-semibold text-gray-900">1. Project Summary</h4>
+            <h4 className="text-xl font-semibold text-gray-900">1. Summary (max-500 words)</h4>
           </div>
           <div className={`text-sm font-medium px-3 py-1 rounded-full ${
             summaryWordCount > 500 ? 'bg-red-100 text-red-700' : 
@@ -46,16 +46,16 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
 
         <div className="space-y-4">
           <div className="bg-white p-4 rounded-lg border border-blue-100">
-            <h5 className="font-medium text-gray-900 mb-2">Your summary should include:</h5>
+            <h5 className="font-medium text-gray-900 mb-2">The summary should briefly describe:</h5>
             <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
               <li>The Goal of the proposed project</li>
               <li>Rationale/Justification for the project approach</li>
               <li>Purpose of the project</li>
-              <li>Contribution towards the Belize Fund Thematic Area (Focus on targeted TA only!)</li>
+              <li>Contribution towards the Belize Fund Thematic Area (TA). Focus on the targeted TA only!</li>
               <li>Contribution towards national/local management plans and strategies (if any)</li>
-              <li>The issue to be addressed (problem/threat) and proposed solution</li>
+              <li>The issue to be addressed (the problem/threat) and proposed approach/solution (the solution)</li>
               <li>Site description (if relevant)</li>
-              <li>Beneficiaries, including participation of women, men and indigenous people</li>
+              <li>Beneficiaries, including the participation of women, men and indigenous people, if any</li>
             </ul>
           </div>
 
@@ -111,7 +111,7 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <Building className="h-6 w-6 text-green-600 mr-2" />
-            <h4 className="text-xl font-semibold text-gray-900">2. Organizational Background and Capacity</h4>
+            <h4 className="text-xl font-semibold text-gray-900">2. Organizational Background and Capacity (max-500 words)</h4>
           </div>
           <div className={`text-sm font-medium px-3 py-1 rounded-full ${
             orgBackgroundWordCount > 500 ? 'bg-red-100 text-red-700' : 
@@ -124,14 +124,15 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
 
         <div className="space-y-6">
           <div className="bg-white p-4 rounded-lg border border-green-100">
-            <h5 className="font-medium text-gray-900 mb-2">This section must include:</h5>
+            <h5 className="font-medium text-gray-900 mb-2">This section should provide information on the profile of the lead applicant (organization) and main partners (implementing). Furthermore, it should clearly demonstrate that the applicant (supported by partners if appropriate) has the capacity, commitment and experience to successfully implement the proposed project. This section must include:</h5>
             <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-              <li>Organization Mission and Vision</li>
-              <li>Purpose and day-to-day core activities</li>
+              <li>Organization Mission and Vision (attach supporting document)</li>
+              <li>The purpose and day-to-day core activities being carried out by the applying organization</li>
               <li>Organizational legal status, date of registration and governance structure</li>
-              <li>Existing capacity and skills to implement the project</li>
-              <li>Past/current relevant experience and partnerships</li>
-              <li>Examples of relevant projects with details (title, period, leader, partners, budget, donor)</li>
+              <li>Existing capacity and skills to effectively implement and manage the proposed project (including the project implementation team)</li>
+              <li>Description of past or current experience(s) and partnership(s), relevant to the present proposal</li>
+              <li>Provide examples of relevant projects executed to date, giving a brief description including: project title, period of implementation, project leader, partners, budget, and donor/agency</li>
+              <li>Include CV (if applicable) as supporting documents for the Project Manager/project implementation team</li>
             </ul>
           </div>
 
@@ -199,7 +200,7 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
             <textarea
               {...register('organizationalBackground')}
               className="form-input min-h-[300px]"
-              placeholder="Provide detailed information about your organization's background, capacity, governance structure, core activities, and relevant experience..."
+              placeholder="Describe your organization's background, capacity, experience, and relevant projects. Include details about your team's qualifications and past achievements..."
             />
             {errors.organizationalBackground && (
               <p className="form-error">{errors.organizationalBackground.message}</p>
@@ -211,54 +212,46 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
             )}
           </div>
 
-          {/* Team and Partnerships */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="form-label">Project Manager Name *</label>
-              <input
-                type="text"
-                {...register('projectManagerName')}
-                className="form-input"
-                placeholder="Full name of project manager"
-              />
-              {errors.projectManagerName && (
-                <p className="form-error">{errors.projectManagerName.message}</p>
-              )}
-            </div>
+          {/* Project Implementation Team */}
+          <div className="bg-white p-4 rounded-lg border border-green-100">
+            <h5 className="font-medium text-gray-900 mb-3">Project Implementation Team</h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="form-label">Project Manager Name *</label>
+                <input
+                  type="text"
+                  {...register('projectManagerName')}
+                  className="form-input"
+                  placeholder="Full name of project manager"
+                />
+                {errors.projectManagerName && (
+                  <p className="form-error">{errors.projectManagerName.message}</p>
+                )}
+              </div>
 
-            <div>
-              <label className="form-label">Project Manager Qualifications *</label>
-              <textarea
-                {...register('projectManagerQualifications')}
-                className="form-input"
-                rows="3"
-                placeholder="Brief summary of project manager's relevant qualifications and experience"
-              />
-              {errors.projectManagerQualifications && (
-                <p className="form-error">{errors.projectManagerQualifications.message}</p>
-              )}
+              <div>
+                <label className="form-label">Project Manager Qualifications *</label>
+                <textarea
+                  {...register('projectManagerQualifications')}
+                  className="form-input"
+                  rows="3"
+                  placeholder="Brief description of qualifications and experience"
+                />
+                {errors.projectManagerQualifications && (
+                  <p className="form-error">{errors.projectManagerQualifications.message}</p>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Partner Organizations */}
+          {/* Previous Relevant Projects */}
           <div>
-            <label className="form-label">Partner Organizations (if applicable)</label>
-            <textarea
-              {...register('partnerOrganizations')}
-              className="form-input"
-              rows="4"
-              placeholder="List and describe any partner organizations involved in project implementation, including their roles and contributions"
-            />
-          </div>
-
-          {/* Previous Projects */}
-          <div>
-            <label className="form-label">Relevant Previous Projects *</label>
+            <label className="form-label">Previous Relevant Projects</label>
             <textarea
               {...register('previousRelevantProjects')}
               className="form-input"
-              rows="5"
-              placeholder="Provide examples of relevant projects executed by your organization. Include: project title, implementation period, project leader, partners, budget, and donor/funding agency"
+              rows="4"
+              placeholder="List and briefly describe relevant projects executed to date, including: project title, period of implementation, project leader, partners, budget, and donor/agency"
             />
             {errors.previousRelevantProjects && (
               <p className="form-error">{errors.previousRelevantProjects.message}</p>
@@ -267,22 +260,19 @@ const Step2BackgroundInfo = ({ register, errors, setValue, getValues, watch }) =
         </div>
       </div>
 
-      {/* Supporting Documents Reminder */}
-      <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
-        <div className="flex items-center mb-3">
-          <Info className="h-5 w-5 text-yellow-600 mr-2" />
-          <h5 className="font-medium text-gray-900">Supporting Documents Required</h5>
+      {/* Important Notes */}
+      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <div className="flex items-start">
+          <Info className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+          <div>
+            <h5 className="font-medium text-gray-900 mb-2">Important Notes:</h5>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li>• Organization Mission and Vision documents should be attached in the final step</li>
+              <li>• CVs for Project Manager and key implementation team members should be attached</li>
+              <li>• Ensure all information demonstrates capacity to implement the proposed project</li>
+            </ul>
+          </div>
         </div>
-        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-          <li>Organization Mission and Vision statements (official document)</li>
-          <li>Certificate of registration/incorporation</li>
-          <li>Project Manager CV</li>
-          <li>Key project implementation team CVs</li>
-          <li>Organizational chart/governance structure</li>
-        </ul>
-        <p className="text-sm text-gray-600 mt-2">
-          These documents will be uploaded in the final step of the application.
-        </p>
       </div>
     </div>
   )

@@ -30,7 +30,7 @@
   }
   
   .step-indicator {
-    @apply flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors;
+    @apply flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium transition-colors flex-shrink-0;
   }
   
   .step-indicator.completed {
@@ -43,5 +43,14 @@
   
   .step-indicator.pending {
     @apply bg-gray-200 text-gray-600;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Safari and Chrome */
   }
 } 

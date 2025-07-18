@@ -356,8 +356,14 @@ class ApplicationService {
 
   // Zoho Creator Integration Methods
   async createZohoRecord(proposalData) {
+    if (MOCK_MODE) {
+      console.log('Running in MOCK_MODE for createZohoRecord');
+      return { success: true, data: { recordId: this.generateMockId() } };
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/applications/zoho/create`, {
+      console.log('Making API call to Zoho Creator for proposal record creation.');
+      const response = await fetch(`${API_BASE_URL}/applications/zoho/proposal`, { // Changed endpoint from /zoho/create
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -367,12 +373,12 @@ class ApplicationService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to create record in Zoho Creator');
+        throw new Error(error.message || 'Failed to create Zoho Creator record');
       }
 
       return await response.json();
     } catch (error) {
-      console.error('Error creating record in Zoho Creator:', error);
+      console.error('Error creating Zoho Creator record:', error);
       throw error;
     }
   }
@@ -395,69 +401,86 @@ class ApplicationService {
 
   // Concept Paper Submission Methods
   async submitConceptPaper(conceptData) {
+    console.log('submitConceptPaper called with:', { conceptData });
+
     if (MOCK_MODE) {
-      // Mock implementation for concept paper
-      console.log('Mock concept paper submission:', conceptData);
-      return {
-        success: true,
-        message: 'Concept paper submitted successfully (mock)',
-        recordId: 'MOCK-CONCEPT-' + Date.now()
-      };
+      console.log('Running in MOCK_MODE for concept paper submission');
+      return { success: true, message: 'Concept paper submitted in mock mode.' };
     }
 
     try {
-      console.log('Step 1: Submitting concept paper data...');
-      
-      const formDataForSubmission = { ...conceptData };
-      const filesToUpload = {
-        registrationCertFile: formDataForSubmission.registrationCertFile,
-        articlesFile: formDataForSubmission.articlesFile,
-        certGoodStandingFile: formDataForSubmission.certGoodStandingFile,
-      };
+      console.log('Making API call to create Zoho Creator concept record for:', conceptData.projectTitle);
+      const zohoResult = await this.createConceptZohoRecord(conceptData);
+      console.log('Zoho Creator concept record created:', zohoResult);
 
-      // Remove file objects from form data for initial submission
-      delete formDataForSubmission.registrationCertFile;
-      delete formDataForSubmission.articlesFile;
-      delete formDataForSubmission.certGoodStandingFile;
-
-      // Create the record first
-      const createResponse = await this.createConceptZohoRecord(formDataForSubmission);
-
-      if (!createResponse.success || !createResponse.data.recordId) {
-        throw new Error(createResponse.message || 'Failed to create concept record');
+      if (!zohoResult.success) {
+        throw new Error(zohoResult.message || 'Failed to create Zoho Creator concept record');
       }
 
-      const recordId = createResponse.data.recordId;
-      console.log(`Step 2: Record created with ID: ${recordId}. Starting file uploads...`);
+      const recordId = zohoResult.recordId;
+      const uploadedFiles = [];
 
-      // Upload files one by one
-      const uploadPromises = [];
-      const fileMap = {
-        registrationCertFile: 'Certificate_of_Registration',
-        articlesFile: 'Articles_of_Association_Business_Extract',
-        certGoodStandingFile: 'Certificate_of_Good_Standing_BCAAR'
-      };
+      // Loop through conceptData and find file fields
+      for (const key in conceptData) {
+        if (conceptData[key] instanceof File) {
+          const file = conceptData[key];
+          let zohoFieldName;
 
-      for (const [fileKey, fieldName] of Object.entries(fileMap)) {
-        if (filesToUpload[fileKey]) {
-          uploadPromises.push(
-            this.uploadConceptFile(recordId, fieldName, filesToUpload[fileKey])
-          );
+          // Map frontend field names to Zoho file upload field names
+          switch (key) {
+            case 'organizationProofOfRegistration':
+              zohoFieldName = 'Proof_of_Registration';
+              break;
+            case 'financialAuditReport':
+              zohoFieldName = 'Financial_Audit_Report';
+              break;
+            case 'organizationalChart':
+              zohoFieldName = 'Organizational_Chart';
+              break;
+            case 'bankStatement':
+              zohoFieldName = 'Bank_Statement';
+              break;
+            case 'boardResolution':
+              zohoFieldName = 'Board_Resolution';
+              break;
+            case 'financialPlan':
+              zohoFieldName = 'Financial_Plan';
+              break;
+            case 'projectBudget':
+              zohoFieldName = 'Project_Budget';
+              break;
+            case 'environmentalSocialAssessment':
+              zohoFieldName = 'Environmental_Social_Assessment';
+              break;
+            case 'signedDeclaration':
+              zohoFieldName = 'Signed_Declaration';
+              break;
+            default:
+              zohoFieldName = null; // Don't upload if no mapping
+          }
+
+          if (zohoFieldName) {
+            console.log(`Attempting to upload file for field: ${key} (${zohoFieldName})`);
+            const fileUploadResult = await this.uploadConceptFile(recordId, zohoFieldName, file);
+            uploadedFiles.push({ field: zohoFieldName, success: fileUploadResult.success, message: fileUploadResult.message });
+            if (!fileUploadResult.success) {
+              console.error(`Failed to upload file ${file.name} for field ${zohoFieldName}:`, fileUploadResult.message);
+              // Decide whether to throw an error or continue with other files
+              // For now, we'll log and continue to attempt other uploads
+            }
+          } else {
+            console.warn(`No Zoho field mapping found for file: ${key}`);
+          }
         }
       }
 
-      const uploadResults = await Promise.all(uploadPromises);
-      const allUploadsSuccessful = uploadResults.every(r => r.success);
-      
-      console.log('Step 3: File upload results:', uploadResults);
+      console.log('Concept paper submission process completed. File upload results:', uploadedFiles);
 
       return {
         success: true,
         recordId: recordId,
-        message: allUploadsSuccessful
-          ? 'Concept paper submitted and all files uploaded successfully!'
-          : 'Concept paper submitted, but some file uploads failed.',
-        uploadResults: uploadResults
+        message: 'Concept paper submitted and files processed.',
+        uploadedFiles: uploadedFiles
       };
 
     } catch (error) {
@@ -466,35 +489,121 @@ class ApplicationService {
     }
   }
 
-  async uploadConceptFile(recordId, fieldName, file) {
+  async submitGapProposal(proposalData) {
+    console.log('submitGapProposal called with:', { proposalData });
+
+    if (MOCK_MODE) {
+      console.log('Running in MOCK_MODE for GAP proposal submission');
+      return { success: true, message: 'GAP proposal submitted in mock mode.' };
+    }
+
+    try {
+      // First, create the record in Zoho Creator
+      console.log('Making API call to create Zoho Creator proposal record for:', proposalData.projectTitle);
+      const zohoResult = await this.createProposalZohoRecord(proposalData); // Renamed function
+      console.log('Zoho Creator proposal record created:', zohoResult);
+
+      if (!zohoResult.success) {
+        throw new Error(zohoResult.message || 'Failed to create Zoho Creator proposal record');
+      }
+
+      const recordId = zohoResult.recordId;
+      const uploadedFiles = [];
+
+      // Handle file uploads after record creation
+      // Note: The backend's zohoService.js expects 'files' as an array of objects
+      // where each object has { file, fieldName, fileName }
+      if (proposalData.files && Array.isArray(proposalData.files)) {
+        for (const fileObject of proposalData.files) {
+          const { file, zohoFieldName, fileName } = fileObject;
+          if (file && zohoFieldName && fileName) {
+            console.log(`Attempting to upload file: ${fileName} to Zoho field: ${zohoFieldName}`);
+            const fileUploadResult = await this.uploadGapFile(recordId, zohoFieldName, file, fileName);
+            uploadedFiles.push({ field: zohoFieldName, success: fileUploadResult.success, message: fileUploadResult.message });
+            if (!fileUploadResult.success) {
+              console.error(`Failed to upload file ${fileName} for field ${zohoFieldName}:`, fileUploadResult.message);
+              // Continue with other files even if one fails
+            }
+          }
+        }
+      }
+
+      console.log('GAP proposal submission process completed. File upload results:', uploadedFiles);
+
+      return {
+        success: true,
+        recordId: recordId,
+        message: 'GAP proposal submitted and files processed.',
+        uploadedFiles: uploadedFiles
+      };
+
+    } catch (error) {
+      console.error('Error submitting GAP proposal:', error);
+      throw error;
+    }
+  }
+
+  // New function for GAP Proposal record creation
+  async createProposalZohoRecord(proposalData) {
+    if (MOCK_MODE) {
+      console.log('Running in MOCK_MODE for Zoho GAP Proposal record creation');
+      return { success: true, recordId: this.generateMockId(), message: 'Mock Zoho GAP Proposal record created.' };
+    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/zoho/proposal`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(proposalData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create Zoho GAP Proposal record');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating Zoho GAP Proposal record:', error);
+      throw error;
+    }
+  }
+
+  // New function for GAP Proposal file upload
+  async uploadGapFile(recordId, fieldName, file, fileName) {
+    if (MOCK_MODE) {
+      console.log(`Running in MOCK_MODE for GAP file upload: ${fileName} to ${fieldName}`);
+      return { success: true, message: 'Mock file uploaded.' };
+    }
     try {
       const formData = new FormData();
-      formData.append('recordId', recordId);
-      formData.append('fieldName', fieldName);
-      formData.append('file', file);
+      formData.append('file', file, fileName);
+      formData.append('fieldName', fieldName); // Add fieldName to FormData
+      formData.append('recordId', recordId); // Add recordId to FormData
 
-      const response = await fetch(`${API_BASE_URL}/applications/concept/upload`, {
+      const response = await fetch(`${API_BASE_URL}/zoho/upload-file`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
         const error = await response.json();
-        return { success: false, fieldName, message: error.message || 'Upload failed' };
+        throw new Error(error.message || 'Failed to upload GAP file');
       }
-      
-      const result = await response.json();
-      return { success: result.success, fieldName, message: result.message };
-
+      return await response.json();
     } catch (error) {
-      console.error(`Error uploading file for ${fieldName}:`, error);
-      return { success: false, fieldName, message: error.message };
+      console.error('Error uploading GAP file:', error);
+      throw error;
     }
   }
-
+  
   async createConceptZohoRecord(conceptData) {
+    if (MOCK_MODE) {
+      console.log('Running in MOCK_MODE for Zoho Concept record creation');
+      return { success: true, recordId: this.generateMockId(), message: 'Mock Zoho Concept record created.' };
+    }
     try {
-      const response = await fetch(`${API_BASE_URL}/applications/concept/zoho/create`, {
+      const response = await fetch(`${API_BASE_URL}/zoho/concept`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -504,16 +613,41 @@ class ApplicationService {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || 'Failed to create concept record in Zoho Creator');
+        throw new Error(error.message || 'Failed to create Zoho Concept record');
       }
-
       return await response.json();
     } catch (error) {
-      console.error('Error creating concept record in Zoho Creator:', error);
+      console.error('Error creating Zoho Concept record:', error);
       throw error;
     }
   }
 
+  async uploadConceptFile(recordId, fieldName, file) {
+    if (MOCK_MODE) {
+      console.log(`Running in MOCK_MODE for concept file upload: ${file.name} to ${fieldName}`);
+      return { success: true, message: 'Mock file uploaded.' };
+    }
+    try {
+      const formData = new FormData();
+      formData.append('file', file, file.name);
+      formData.append('fieldName', fieldName);
+      formData.append('recordId', recordId);
+
+      const response = await fetch(`${API_BASE_URL}/zoho/upload-concept-file`, { // Corrected endpoint for concept file uploads
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to upload concept file');
+      }
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading concept file:', error);
+      throw error;
+    }
+  }
 }
 
 export const applicationService = new ApplicationService(); 

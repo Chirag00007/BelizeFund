@@ -131,8 +131,6 @@ class ZohoService {
   }
 
   mapToZohoFields(proposalData) {
-    // Map frontend form data to Zoho Creator field names
-    // Only including the specific fields provided by user
     const mappedData = {};
 
     // Helper function to format dates for Zoho Creator (DD-MMM-YYYY format)
@@ -147,59 +145,74 @@ class ZohoService {
         const month = months[date.getMonth()];
         const year = date.getFullYear();
         
-        const zohoFormat = `${day}-${month}-${year}`;
-        
-        console.log(`Date formatting: ${dateString} -> Zoho format: ${zohoFormat}`);
-        
-        return zohoFormat;
+        return `${day}-${month}-${year}`;
       } catch (error) {
         console.warn('Error formatting date:', dateString, error);
         return null;
       }
     };
 
-    // Helper function to check if value is a BigInt or likely a lookup field
-    const isLookupField = (value) => {
-      if (value === null || value === undefined) return true;
-      if (typeof value === 'number' && (value > Number.MAX_SAFE_INTEGER || value < Number.MIN_SAFE_INTEGER)) return true;
-      if (typeof value === 'string' && /^\d{15,}$/.test(value)) return true; // Very long numbers are likely BigInt
-      return false;
-    };
-
-    // Helper function to safely add field if it's not a lookup
-    const addFieldIfNotLookup = (value, fieldName) => {
-      if (!isLookupField(value) && value !== '') {
-        mappedData[fieldName] = value;
+    // Helper function to safely add field if it's valid and not a File object
+    const addFieldIfValidAndNotFile = (value, fieldName) => {
+      if (value === null || value === undefined || value === '' || value instanceof File) {
+        return;
       }
+      mappedData[fieldName] = value;
     };
 
-    // Map only to the specific fields provided by user
-    // Project_Title (text)
-    addFieldIfNotLookup(proposalData.projectTitle, 'Project_Title');
-    
-    // Project_title1 (text) - alternative project title field
-    addFieldIfNotLookup(proposalData.projectTitle, 'Project_title1');
-    
-    // Proposed_Start_Date (date-time)
-    if (proposalData.proposedStartDate && !isLookupField(proposalData.proposedStartDate)) {
-      const formattedStartDate = formatDateForZoho(proposalData.proposedStartDate);
-      if (formattedStartDate) mappedData.Proposed_Start_Date = formattedStartDate;
-    }
-    
-    // Recipient_Organization (text)
-    addFieldIfNotLookup(proposalData.organizationName, 'Recipient_Organization');
-    
-    // Stakeholder_Engagement_Plan_SEP (text)
-    addFieldIfNotLookup(proposalData.sep, 'Stakeholder_Engagement_Plan_SEP');
-    
-    // SUMMARY (text)
-    addFieldIfNotLookup(proposalData.projectDescription, 'SUMMARY');
-    
-    // SUSTAINABILITY_REPLICATION1 (text)
-    addFieldIfNotLookup(proposalData.sustainabilityReplication, 'SUSTAINABILITY_REPLICATION1');
-    
-    // Project_Duration1 (text)
-    if (proposalData.proposedStartDate && proposalData.expectedEndDate && !isLookupField(proposalData.proposedStartDate) && !isLookupField(proposalData.expectedEndDate)) {
+    // --- Scalar Mappings ---
+    addFieldIfValidAndNotFile(proposalData.projectTitle, 'Project_Title');
+    addFieldIfValidAndNotFile(proposalData.projectTitle, 'Project_title1'); // Redundant field, but mapped as per sample
+
+    // Dates
+    const proposedStartDateFormatted = formatDateForZoho(proposalData.proposedStartDate);
+    if (proposedStartDateFormatted) mappedData.Proposed_Start_Date = proposedStartDateFormatted;
+    const registrationDateFormatted = formatDateForZoho(proposalData.registrationDate);
+    if (registrationDateFormatted) mappedData.Registration_Date = registrationDateFormatted;
+    const dateOfIncorporationFormatted = formatDateForZoho(proposalData.dateOfIncorporation);
+    if (dateOfIncorporationFormatted) mappedData.Date_of_incorporation_of_Organization = dateOfIncorporationFormatted;
+    const expectedEndDateFormatted = formatDateForZoho(proposalData.expectedEndDate);
+    if (expectedEndDateFormatted) mappedData.Expected_End_Date = expectedEndDateFormatted;
+    const declarationDateFormatted = formatDateForZoho(proposalData.declarationDate);
+    if (declarationDateFormatted) mappedData.Declaration_Date = declarationDateFormatted;
+
+    // Organization Details
+    addFieldIfValidAndNotFile(proposalData.organizationName, 'Organization');
+    addFieldIfValidAndNotFile(proposalData.organizationName, 'Recipient_Organization');
+    addFieldIfValidAndNotFile(proposalData.organizationAddress, 'Organization_Address');
+    // addFieldIfValidAndNotFile(proposalData.legalStatus, 'Legal_Status');
+    // addFieldIfValidAndNotFile(proposalData.organizationType, 'Type_of_Organization');
+    addFieldIfValidAndNotFile(proposalData.organizationVision, 'Organization_Vision');
+    addFieldIfValidAndNotFile(proposalData.organizationMission, 'Organization_Mission');
+    addFieldIfValidAndNotFile(proposalData.organizationalBackground, 'Organizational_Background_and_Capacity');
+    addFieldIfValidAndNotFile(proposalData.previousRelevantProjects, 'Relevant_Previous_Projects');
+    addFieldIfValidAndNotFile(proposalData.partnerOrganizations, 'Partner_Organizations_if_applicable');
+
+    // Contact Information
+    addFieldIfValidAndNotFile(proposalData.contactName, 'Contact_Name');
+    addFieldIfValidAndNotFile(proposalData.contactPosition, 'Position');
+    addFieldIfValidAndNotFile(proposalData.contactEmail, 'Email');
+    addFieldIfValidAndNotFile(proposalData.contactTelephone, 'Telephone');
+    addFieldIfValidAndNotFile(proposalData.projectManagerName, 'Project_Manager_Name');
+    addFieldIfValidAndNotFile(proposalData.projectManagerQualifications, 'Project_Manager_Qualifications');
+    addFieldIfValidAndNotFile(proposalData.legalRepresentativeName, 'Legal_Representative_Name');
+    addFieldIfValidAndNotFile(proposalData.legalRepresentativeTitle, 'Legal_Representative_Title');
+
+
+    // Project Details
+    addFieldIfValidAndNotFile(proposalData.projectSummary, 'Project_Summary');
+    // addFieldIfValidAndNotFile(proposalData.projectEnvironment, 'Project_Environment');
+    addFieldIfValidAndNotFile(proposalData.detailedLocationDescription, 'Detailed_Location_Description');
+    // addFieldIfValidAndNotFile(proposalData.primaryLocation, 'Primary_Location');
+    // addFieldIfValidAndNotFile(proposalData.primaryThematicArea, 'Primary_Belize_Fund_Thematic_Area'); // Do not map this field for now
+    // addFieldIfValidAndNotFile(proposalData.secondaryThematicArea, 'Secondary_Thematic_Area_if_applicable');
+    addFieldIfValidAndNotFile(proposalData.logicalFrameworkGoal, 'Goal'); // Mapping logicalFrameworkGoal to 'Goal' in Zoho
+    addFieldIfValidAndNotFile(proposalData.stakeholderEngagementPlan, 'Stakeholder_Engagement_Plan_SEP');
+    addFieldIfValidAndNotFile(proposalData.sustainabilityPlan, 'SUSTAINABILITY_REPLICATION1');
+    addFieldIfValidAndNotFile(proposalData.replicationPotential, 'SUSTAINABILITY_REPLICATION1'); // Assuming this is an alternative input for the same field, latest will override or combine.
+
+    // Calculate Project_Duration1 (days)
+    if (proposalData.proposedStartDate && proposalData.expectedEndDate) {
       const startDate = new Date(proposalData.proposedStartDate);
       const endDate = new Date(proposalData.expectedEndDate);
       if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
@@ -207,29 +220,177 @@ class ZohoService {
         mappedData.Project_Duration1 = `${durationInDays} days`;
       }
     }
-    
-    // Project_Goal (text)
-    addFieldIfNotLookup(proposalData.projectGoal, 'Project_Goal');
-    
-    // Project_Goal1 (text) - alternative project goal field
-    addFieldIfNotLookup(proposalData.projectGoal, 'Project_Goal1');
-    
-    // Project_Location (text)
-    let projectLocation = '';
-    if (proposalData.proposalVillageOrCity && !isLookupField(proposalData.proposalVillageOrCity)) {
-      projectLocation += proposalData.proposalVillageOrCity;
+    addFieldIfValidAndNotFile(proposalData.projectDurationMonths, 'Duration_Months');
+
+    // Project Objective(s) - Concatenate objectives into a single field
+    let projectObjectivesText = '';
+    if (proposalData.objective1) projectObjectivesText += proposalData.objective1;
+    if (proposalData.objective2) projectObjectivesText += (projectObjectivesText ? '\n' : '') + proposalData.objective2;
+    if (proposalData.objective3) projectObjectivesText += (projectObjectivesText ? '\n' : '') + proposalData.objective3;
+    if (projectObjectivesText) mappedData.Project_Objective_s = projectObjectivesText;
+    addFieldIfValidAndNotFile(proposalData.projectGoalObjectives, 'Project_Goal'); // From previous mapping
+
+
+    // --- Subform Mappings ---
+
+    // ENVIRONMENTAL_AND_SOCIAL_RISK_SCREENING_AND_MITIGATION Subform
+    const riskEntries = [];
+    if (proposalData.risk1Category || proposalData.risk1Description || proposalData.risk1Impact || proposalData.risk1Mitigation) {
+      riskEntries.push({
+        Risk_Factors: `Category: ${proposalData.risk1Category || ''}, Description: ${proposalData.risk1Description || ''}, Impact: ${proposalData.risk1Impact || ''}, Mitigation: ${proposalData.risk1Mitigation || ''}`
+      });
     }
-    if (proposalData.district && !isLookupField(proposalData.district)) {
-      projectLocation += projectLocation ? `, ${proposalData.district}` : proposalData.district;
+    if (proposalData.risk2Category || proposalData.risk2Description || proposalData.risk2Impact || proposalData.risk2Mitigation) {
+      riskEntries.push({
+        Risk_Factors: `Category: ${proposalData.risk2Category || ''}, Description: ${proposalData.risk2Description || ''}, Impact: ${proposalData.risk2Impact || ''}, Mitigation: ${proposalData.risk2Mitigation || ''}`
+      });
     }
-    if (proposalData.proposalProjectLocation && !isLookupField(proposalData.proposalProjectLocation)) {
-      projectLocation += projectLocation ? `, ${proposalData.proposalProjectLocation}` : proposalData.proposalProjectLocation;
+    if (proposalData.risk3Category || proposalData.risk3Description || proposalData.risk3Impact || proposalData.risk3Mitigation) {
+      riskEntries.push({
+        Risk_Factors: `Category: ${proposalData.risk3Category || ''}, Description: ${proposalData.risk3Description || ''}, Impact: ${proposalData.risk3Impact || ''}, Mitigation: ${proposalData.risk3Mitigation || ''}`
+      });
     }
-    if (projectLocation) {
-      mappedData.Project_Location = projectLocation;
+    if (riskEntries.length > 0) {
+      mappedData.ENVIRONMENTAL_AND_SOCIAL_RISK_SCREENING_AND_MITIGATION = riskEntries;
     }
 
-    console.log('Filtered Zoho data (only specified fields):', mappedData);
+    // Project_Budget_Summary Subform
+    const budgetSummaryEntries = [];
+    if (proposalData.coFinancingSources) {
+      budgetSummaryEntries.push({
+        Contributing_Organizations: proposalData.coFinancingSources
+      });
+    }
+    if (budgetSummaryEntries.length > 0) {
+      mappedData.Project_Budget_Summary = budgetSummaryEntries;
+    }
+
+    // BUDGET scalar field (combining total and individual budget items)
+    let budgetSummaryText = `Total Budget Requested: BZ$${proposalData.totalBudgetRequested || 0}. `;
+    budgetSummaryText += `Total Co-financing: BZ$${proposalData.totalCoFinancing || 0}. `;
+    budgetSummaryText += `Total Project Cost: BZ$${proposalData.totalProjectCost || 0}.\n`;
+
+    const budgetCategories = [
+        { key: 'fieldStaffSalary', label: 'Field Staff Salary' },
+        { key: 'projectManagerSalary', label: 'Project Manager Salary' },
+        { key: 'otherPersonnelCosts', label: 'Other Personnel Costs' },
+        { key: 'travelCosts', label: 'Travel Costs' },
+        { key: 'equipmentPurchase', label: 'Equipment Purchase' },
+        { key: 'equipmentRental', label: 'Equipment Rental' },
+        { key: 'materialsCosts', label: 'Materials Costs' },
+        { key: 'consultantFees', label: 'Consultant Fees' },
+        { key: 'trainingCosts', label: 'Training Costs' },
+        { key: 'communicationCosts', label: 'Communication Costs' },
+        { key: 'utilitiesCosts', label: 'Utilities Costs' },
+        { key: 'maintenanceCosts', label: 'Maintenance Costs' },
+        { key: 'vehiclesCosts', label: 'Vehicles Costs' },
+        { key: 'insuranceCosts', label: 'Insurance Costs' },
+        { key: 'auditCosts', label: 'Audit Costs' },
+        { key: 'administrativeCosts', label: 'Administrative Costs' },
+        { key: 'evaluationBudget', label: 'Evaluation Budget' }
+    ];
+
+    budgetCategories.forEach(({ key, label }) => {
+        if (proposalData[key]) {
+            budgetSummaryText += `${label}: BZ$${proposalData[key]}. `;
+        }
+    });
+    addFieldIfValidAndNotFile(budgetSummaryText.trim(), 'BUDGET');
+
+
+    // Project_Monitoring_Evaluation_Plan Subform
+    const mePlanEntries = [];
+    if (proposalData.meProjectGoal) mePlanEntries.push({ Outcome_Outputs: `Project Goal: ${proposalData.meProjectGoal}` });
+    if (proposalData.meProjectObjectives) mePlanEntries.push({ Outcome_Outputs: `Project Objectives: ${proposalData.meProjectObjectives}` });
+    if (proposalData.monitoringEvaluationPlan) mePlanEntries.push({ Outcome_Outputs: `M&E Plan: ${proposalData.monitoringEvaluationPlan}` });
+    if (proposalData.monitoringIntegration) mePlanEntries.push({ Outcome_Outputs: `Monitoring Integration: ${proposalData.monitoringIntegration}` });
+    if (proposalData.midTermEvaluationPlan) mePlanEntries.push({ Outcome_Outputs: `Mid-Term Evaluation: ${proposalData.midTermEvaluationPlan}` });
+    if (proposalData.endProjectEvaluationPlan) mePlanEntries.push({ Outcome_Outputs: `End Project Evaluation: ${proposalData.endProjectEvaluationPlan}` });
+    if (proposalData.lessonLearning) mePlanEntries.push({ Outcome_Outputs: `Lesson Learning: ${proposalData.lessonLearning}` });
+
+    // Individual Indicators
+    const indicators = [
+      { id: '1', description: 'indicator1Description', baseline: 'indicator1Baseline', frequency: 'indicator1Frequency', outcome: 'indicator1Outcome', responsible: 'indicator1Responsible', target: 'indicator1Target', verification: 'indicator1Verification' },
+      { id: '2', description: 'indicator2Description', baseline: 'indicator2Baseline', frequency: 'indicator2Frequency', outcome: 'indicator2Outcome', responsible: 'indicator2Responsible', target: 'indicator2Target', verification: 'indicator2Verification' },
+      { id: '3', description: 'indicator3Description', baseline: 'indicator3Baseline', frequency: 'indicator3Frequency', outcome: 'indicator3Outcome', responsible: 'indicator3Responsible', target: 'indicator3Target', verification: 'indicator3Verification' },
+    ];
+
+    indicators.forEach(ind => {
+      const hasIndicatorData = Object.keys(ind).some(key => key !== 'id' && proposalData[ind[key]]);
+      if (hasIndicatorData) {
+        mePlanEntries.push({
+          Outcome_Outputs: `Indicator ${ind.id}: ${proposalData[ind.description] || ''}. Baseline: ${proposalData[ind.baseline] || ''}. Frequency: ${proposalData[ind.frequency] || ''}. Outcome: ${proposalData[ind.outcome] || ''}. Responsible: ${proposalData[ind.responsible] || ''}. Target: ${proposalData[ind.target] || ''}. Verification: ${proposalData[ind.verification] || ''}.`
+        });
+      }
+    });
+
+    if (mePlanEntries.length > 0) {
+      mappedData.Project_Monitoring_Evaluation_Plan = mePlanEntries;
+    }
+
+    // Logical Framework fields (as scalar text fields, assuming direct mapping for now)
+    addFieldIfValidAndNotFile(proposalData.outcome1, 'Outcome1');
+    addFieldIfValidAndNotFile(proposalData.outcome2, 'Outcome2');
+    addFieldIfValidAndNotFile(proposalData.outcome3, 'Outcome3');
+    addFieldIfValidAndNotFile(proposalData.output1_1, 'Output1_1');
+    addFieldIfValidAndNotFile(proposalData.output1_2, 'Output1_2');
+    addFieldIfValidAndNotFile(proposalData.output2_1, 'Output2_1');
+    addFieldIfValidAndNotFile(proposalData.output2_2, 'Output2_2');
+    addFieldIfValidAndNotFile(proposalData.output3_1, 'Output3_1');
+    addFieldIfValidAndNotFile(proposalData.output3_2, 'Output3_2');
+    addFieldIfValidAndNotFile(proposalData.assumptions1, 'Assumptions1');
+    addFieldIfValidAndNotFile(proposalData.assumptions2, 'Assumptions2');
+    addFieldIfValidAndNotFile(proposalData.assumptions3, 'Assumptions3');
+    addFieldIfValidAndNotFile(proposalData.responsibleParty, 'Responsible_Party');
+    addFieldIfValidAndNotFile(proposalData.verification1, 'Verification1');
+    addFieldIfValidAndNotFile(proposalData.verification2, 'Verification2');
+    addFieldIfValidAndNotFile(proposalData.verification3, 'Verification3');
+
+    // Other relevant text fields (from payload)
+    addFieldIfValidAndNotFile(proposalData.additionalRisks, 'Additional_Risks');
+    addFieldIfValidAndNotFile(proposalData.alignmentJustification, 'Alignment_Justification');
+    addFieldIfValidAndNotFile(proposalData.capacityBuilding, 'Capacity_Building');
+    addFieldIfValidAndNotFile(proposalData.disseminationPlans, 'Dissemination_Plans');
+    addFieldIfValidAndNotFile(proposalData.environmentalSustainability, 'Environmental_Sustainability');
+    addFieldIfValidAndNotFile(proposalData.equipmentJustification, 'Equipment_Justification');
+    addFieldIfValidAndNotFile(proposalData.implementationDuration, 'Implementation_Duration');
+    addFieldIfValidAndNotFile(proposalData.implementationTimeline, 'Implementation_Timeline');
+    addFieldIfValidAndNotFile(proposalData.knowledgeTransfer, 'Knowledge_Transfer');
+    addFieldIfValidAndNotFile(proposalData.communityStewardship, 'Community_Stewardship');
+    addFieldIfValidAndNotFile(proposalData.ecosystemServices, 'Ecosystem_Services');
+    addFieldIfValidAndNotFile(proposalData.revenueGeneration, 'Revenue_Generation');
+    addFieldIfValidAndNotFile(proposalData.postProjectFunding, 'Post_Project_Funding');
+    addFieldIfValidAndNotFile(proposalData.scalingStrategy, 'Scaling_Strategy');
+    addFieldIfValidAndNotFile(proposalData.personnelJustification, 'Personnel_Justification');
+    addFieldIfValidAndNotFile(proposalData.operationalJustification, 'Operational_Justification');
+    addFieldIfValidAndNotFile(proposalData.environmentalSocialRiskSummary, 'Environmental_Social_Risk_Summary');
+
+    // Status/Notes for files (not the files themselves)
+    addFieldIfValidAndNotFile(proposalData.generalDoc0Status, 'General_Document_0_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc0Notes, 'General_Document_0_Notes');
+    addFieldIfValidAndNotFile(proposalData.generalDoc1Status, 'General_Document_1_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc1Notes, 'General_Document_1_Notes');
+    addFieldIfValidAndNotFile(proposalData.generalDoc2Status, 'General_Document_2_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc2Notes, 'General_Document_2_Notes');
+    addFieldIfValidAndNotFile(proposalData.generalDoc3Status, 'General_Document_3_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc3Notes, 'General_Document_3_Notes');
+    addFieldIfValidAndNotFile(proposalData.generalDoc4Status, 'General_Document_4_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc4Notes, 'General_Document_4_Notes');
+    addFieldIfValidAndNotFile(proposalData.generalDoc5Status, 'General_Document_5_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc5Notes, 'General_Document_5_Notes');
+    addFieldIfValidAndNotFile(proposalData.generalDoc6Status, 'General_Document_6_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc6Notes, 'General_Document_6_Notes');
+    addFieldIfValidAndNotFile(proposalData.generalDoc7Status, 'General_Document_7_Status');
+    addFieldIfValidAndNotFile(proposalData.generalDoc7Notes, 'General_Document_7_Notes');
+    addFieldIfValidAndNotFile(proposalData.environmentalClearanceRequired, 'Environmental_Clearance_Required');
+    addFieldIfValidAndNotFile(proposalData.environmentalClearanceNotes, 'Environmental_Clearance_Notes');
+    addFieldIfValidAndNotFile(proposalData.esrstStatus, 'ESRST_Status');
+    addFieldIfValidAndNotFile(proposalData.esrstRiskLevel, 'ESRST_Risk_Level');
+    addFieldIfValidAndNotFile(proposalData.esrmpStatus, 'ESRMP_Status');
+    addFieldIfValidAndNotFile(proposalData.gapStatus, 'GAP_Status');
+    addFieldIfValidAndNotFile(proposalData.excelBudgetStatus, 'Excel_Budget_Status');
+
+    console.log('Final Mapped Zoho data for Proposal:', mappedData);
     return mappedData;
   }
 

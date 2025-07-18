@@ -18,6 +18,65 @@ import {
   Send
 } from 'lucide-react'
 
+// Utility to get funding and co-financing requirements based on Regular Grants Funding Window
+const getAwardRequirements = (awardCategory, totalBudgetRequested, totalCoFinancing) => {
+  // All amounts in BZD
+  let limits = {
+    min: 0,
+    max: Infinity,
+    coFinMin: 0,
+    coFinMax: 100,
+    coFinRequired: false,
+    coFinText: '',
+    fundingText: '',
+    maxDuration: '',
+    durationText: '',
+  };
+  
+  if (!awardCategory) return limits;
+  
+  if (awardCategory === 'Community Grant') {
+    limits.max = 50000;
+    limits.fundingText = 'Awards do not exceed BZ$50,000.00';
+    limits.coFinRequired = false;
+    limits.coFinText = 'No co-financing required for Community Grant (≤ BZ$50,000.00)';
+    limits.maxDuration = 18;
+    limits.durationText = 'Projects must not exceed eighteen (18) months in duration';
+  } else if (awardCategory === 'Small Grants') {
+    limits.max = 50000;
+    limits.fundingText = 'Awards do not exceed BZ$50,000.00';
+    limits.coFinRequired = false;
+    limits.coFinText = 'No co-financing required for Small Grants (≤ BZ$50,000.00)';
+    limits.maxDuration = 18;
+    limits.durationText = 'Projects must not exceed eighteen (18) months in duration';
+  } else if (awardCategory === 'Medium Grants') {
+    limits.min = 50000.01;
+    limits.max = 150000;
+    limits.fundingText = 'Awards between BZ$50,000.00 and BZ$150,000.00';
+    limits.coFinRequired = true;
+    limits.coFinMin = 10;
+    limits.coFinMax = 25;
+    limits.coFinText = 'Co-financing required: 10–25% of total project cost';
+    limits.maxDuration = 24;
+    limits.durationText = 'Projects must not exceed two (2) years in duration';
+  } else if (awardCategory === 'Large Grants') {
+    limits.min = 150000.01;
+    limits.max = 500000;
+    limits.fundingText = 'Awards over BZ$150,000.00 up to BZ$500,000.00';
+    limits.coFinRequired = true;
+    limits.coFinMin = 25;
+    limits.coFinMax = 50;
+    limits.coFinText = 'Co-financing required: 25–50% of total project cost';
+    limits.maxDuration = 36;
+    limits.durationText = 'Projects must not exceed three (3) years in duration';
+  }
+  
+  // Calculate actual co-fin %
+  const totalProjectCost = (parseFloat(totalBudgetRequested) || 0) + (parseFloat(totalCoFinancing) || 0);
+  limits.actualCoFinPct = totalProjectCost > 0 ? ((parseFloat(totalCoFinancing) || 0) / totalProjectCost * 100) : 0;
+  return limits;
+};
+
 // Validation Schema
 const conceptSchema = yup.object().shape({
   // Background Information
@@ -46,7 +105,16 @@ const conceptSchema = yup.object().shape({
   
   // Project Duration
   proposedStartDate: yup.date().required('Start date is required'),
-  durationMonths: yup.number().positive('Duration must be positive').required('Duration is required'),
+  durationMonths: yup.number()
+    .positive('Duration must be positive')
+    .required('Duration is required')
+    .test('award-duration-limits', 'Project duration exceeds the maximum allowed for the selected award category.', function(value) {
+      const { awardCategory } = this.parent;
+      const limits = getAwardRequirements(awardCategory, this.parent.totalBudgetRequested, this.parent.totalCoFinancing);
+      if (!awardCategory || !limits.maxDuration) return true;
+      if (typeof value !== 'number' || isNaN(value)) return false;
+      return value <= limits.maxDuration;
+    }),
   
   // Award Category
   thematicArea: yup.string().required('Thematic area is required'),
@@ -78,8 +146,27 @@ const conceptSchema = yup.object().shape({
     }),
   
   // Budget
-  totalBudgetRequested: yup.number().min(0),
-  totalCoFinancing: yup.number().min(0),
+  totalBudgetRequested: yup.number()
+    .min(0)
+    .test('award-funding-limits', 'Requested amount does not meet the funding limits for the selected award category.', function(value) {
+      const { awardCategory } = this.parent;
+      const limits = getAwardRequirements(awardCategory, value, this.parent.totalCoFinancing);
+      if (!awardCategory) return true;
+      if (typeof value !== 'number' || isNaN(value)) return false;
+      return value >= limits.min && value <= limits.max;
+    }),
+  totalCoFinancing: yup.number()
+    .min(0)
+    .test('award-cofin-limits', 'Co-financing does not meet the requirements for the selected award category.', function(value) {
+      const { awardCategory, totalBudgetRequested } = this.parent;
+      const limits = getAwardRequirements(awardCategory, totalBudgetRequested, value);
+      if (!awardCategory) return true;
+      if (!limits.coFinRequired) return true;
+      const totalProjectCost = (parseFloat(totalBudgetRequested) || 0) + (parseFloat(value) || 0);
+      if (totalProjectCost === 0) return true;
+      const pct = (parseFloat(value) || 0) / totalProjectCost * 100;
+      return pct >= limits.coFinMin && pct <= limits.coFinMax;
+    }),
   
   // Declaration
   legalRepresentativeName: yup.string().required('Legal representative name is required'),
@@ -223,6 +310,20 @@ const ConceptForm = () => {
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Auto-update duration field when award category changes
+  useEffect(() => {
+    if (formik.values.awardCategory) {
+      const requirements = getAwardRequirements(formik.values.awardCategory, formik.values.totalBudgetRequested, formik.values.totalCoFinancing);
+      const currentDuration = parseFloat(formik.values.durationMonths) || 0;
+      
+      // If current duration exceeds the new limit, update it to the maximum allowed
+      if (currentDuration > requirements.maxDuration) {
+        formik.setFieldValue('durationMonths', requirements.maxDuration);
+        toast.info(`Duration updated to maximum allowed for ${formik.values.awardCategory}: ${requirements.maxDuration} months`);
+      }
+    }
+  }, [formik.values.awardCategory]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Calculate budget totals
   const totalBudgetRequested = 
     (parseFloat(formik.values.salaryBudget) || 0) +
@@ -238,30 +339,33 @@ const ConceptForm = () => {
   const coFinancingPercentage = totalProjectCost > 0 ? ((parseFloat(formik.values.totalCoFinancing) || 0) / totalProjectCost * 100).toFixed(1) : 0
   const requestedPercentage = totalProjectCost > 0 ? (totalBudgetRequested / totalProjectCost * 100).toFixed(1) : 0
 
+  // Get requirements for current selection
+  const awardRequirements = getAwardRequirements(formik.values.awardCategory, totalBudgetRequested, formik.values.totalCoFinancing);
+
   const thematicAreas = [
     {
       id: 'TA2',
       name: 'TA2. Sustainable Fisheries',
       active: true,
-      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+      awards: ['Community Grant', 'Small Grants', 'Medium Grants', 'Large Grants']
     },
     {
       id: 'TA4',
       name: 'TA4. Blue Business Innovation',
       active: true,
-      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+      awards: ['Community Grant', 'Small Grants', 'Medium Grants', 'Large Grants']
     },
     {
       id: 'TA1',
       name: 'TA1. Protection of Biodiversity',
       active: false,
-      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+      awards: ['Community Grant', 'Small Grants', 'Medium Grants', 'Large Grants']
     },
     {
       id: 'TA3',
       name: 'TA3. Climate Resilience',
       active: false,
-      awards: ['Community Grant', 'Small Grants', 'Medium Grant', 'Large Grant']
+      awards: ['Community Grant', 'Small Grants', 'Medium Grants', 'Large Grants']
     }
   ]
 
@@ -632,10 +736,19 @@ const ConceptForm = () => {
                   {...formik.getFieldProps('durationMonths')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="1"
-                  placeholder="Enter duration in months"
+                  max={awardRequirements.maxDuration || undefined}
+                  placeholder={`Enter duration (max: ${awardRequirements.maxDuration || 'unlimited'} months)`}
                 />
                 {formik.touched.durationMonths && formik.errors.durationMonths && (
                   <p className="text-red-500 text-sm mt-1">{formik.errors.durationMonths}</p>
+                )}
+                {formik.values.awardCategory && awardRequirements.durationText && (
+                  <p className="text-xs text-blue-600 mt-1 font-medium">{awardRequirements.durationText}</p>
+                )}
+                {formik.values.awardCategory && awardRequirements.maxDuration && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Maximum allowed: {awardRequirements.maxDuration} months
+                  </p>
                 )}
               </div>
             </div>
@@ -688,6 +801,42 @@ const ConceptForm = () => {
               ))}
             </div>
           </div>
+
+          {/* Award Category Requirements Display */}
+          {formik.values.awardCategory && (
+            <div className="mb-6 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-lg border border-blue-200">
+              <div className="flex items-center mb-3">
+                <Award className="h-5 w-5 text-blue-600 mr-2" />
+                <h4 className="font-semibold text-gray-800">Award Category Requirements</h4>
+              </div>
+              <div className="bg-white p-3 rounded-lg border">
+                <div className="flex items-center mb-2">
+                  <span className="text-sm font-bold text-blue-700">{formik.values.awardCategory}</span>
+                </div>
+                <div className="grid md:grid-cols-3 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <p className="font-medium text-gray-700">💰 Funding Limits</p>
+                    <p className="text-gray-600">{awardRequirements.fundingText}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-gray-700">⏱️ Project Duration</p>
+                    <p className="text-gray-600">{awardRequirements.durationText}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="font-medium text-gray-700">💳 Co-financing</p>
+                    <p className="text-gray-600">{awardRequirements.coFinText}</p>
+                  </div>
+                </div>
+                {awardRequirements.coFinRequired && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Current co-financing percentage:</span> {awardRequirements.actualCoFinPct.toFixed(1)}%
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Section B: Project Summary */}
@@ -837,19 +986,48 @@ const ConceptForm = () => {
               <h4 className="font-medium text-gray-700 mb-3">Co-financing Information</h4>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Total Co-financing Amount (BZD)
+                  <label htmlFor="totalBudgetRequested" className="block text-sm font-medium text-gray-700 mb-1">
+                    Budget amount requested from Belize Fund (BZ$) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
-                    {...formik.getFieldProps('totalCoFinancing')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    placeholder="0"
+                    id="totalBudgetRequested"
+                    {...formik.getFieldProps('totalBudgetRequested')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter amount"
                     min="0"
                   />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Enter the total amount of co-financing from all sources
-                  </p>
+                  {formik.values.awardCategory && awardRequirements.fundingText && (
+                    <p className="text-xs text-gray-500 mt-1">{awardRequirements.fundingText}</p>
+                  )}
+                  {formik.touched.totalBudgetRequested && formik.errors.totalBudgetRequested && (
+                    <p className="text-xs text-red-600 font-semibold">{formik.errors.totalBudgetRequested}</p>
+                  )}
+                </div>
+                <div>
+                  <label htmlFor="totalCoFinancing" className="block text-sm font-medium text-gray-700 mb-1">
+                    Total Co-financing (BZ$) 
+                    {awardRequirements.coFinRequired && <span className="text-red-500">*</span>}
+                  </label>
+                  <input
+                    type="number"
+                    id="totalCoFinancing"
+                    {...formik.getFieldProps('totalCoFinancing')}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter amount"
+                    min="0"
+                  />
+                  {formik.values.awardCategory && awardRequirements.coFinText && (
+                    <p className="text-xs text-gray-500 mt-1">{awardRequirements.coFinText}</p>
+                  )}
+                  {formik.values.awardCategory && awardRequirements.coFinRequired && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Current Co-financing: {awardRequirements.actualCoFinPct.toFixed(1)}%
+                    </p>
+                  )}
+                  {formik.touched.totalCoFinancing && formik.errors.totalCoFinancing && (
+                    <p className="text-xs text-red-600 font-semibold">{formik.errors.totalCoFinancing}</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -914,6 +1092,35 @@ const ConceptForm = () => {
                 </table>
               </div>
             </div>
+
+            {/* Funding limits and co-financing requirements feedback */}
+            {formik.values.awardCategory && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <h5 className="font-medium text-gray-700 mb-2">Award Category Requirements Summary</h5>
+                <div className="space-y-1 text-sm">
+                  <p className="text-blue-700">
+                    <span className="font-medium">Funding:</span> {awardRequirements.fundingText}
+                  </p>
+                  <p className="text-blue-700">
+                    <span className="font-medium">Duration:</span> {awardRequirements.durationText}
+                  </p>
+                  <p className="text-blue-700">
+                    <span className="font-medium">Co-financing:</span> {awardRequirements.coFinText}
+                  </p>
+                  {awardRequirements.coFinRequired && (
+                    <p className="text-gray-700">
+                      <span className="font-medium">Current co-financing:</span> {awardRequirements.actualCoFinPct.toFixed(1)}%
+                    </p>
+                  )}
+                </div>
+                {formik.touched.totalBudgetRequested && formik.errors.totalBudgetRequested && (
+                  <p className="text-xs text-red-600 font-semibold mt-2">{formik.errors.totalBudgetRequested}</p>
+                )}
+                {formik.touched.totalCoFinancing && formik.errors.totalCoFinancing && (
+                  <p className="text-xs text-red-600 font-semibold mt-2">{formik.errors.totalCoFinancing}</p>
+                )}
+              </div>
+            )}
 
             {/* Budget Guidelines */}
             <div className="bg-blue-50 p-4 rounded-lg">

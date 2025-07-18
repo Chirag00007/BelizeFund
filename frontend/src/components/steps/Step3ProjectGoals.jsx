@@ -18,7 +18,7 @@ const Step3ProjectGoals = ({ register, errors, setValue, getValues, watch }) => 
     <div className="space-y-8">
       {/* Header */}
       <div className="text-center border-b border-gray-200 pb-6">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">Project Layout</h3>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">C. Project Layout</h3>
         <p className="text-gray-600">Define your project goals, objectives, and expected outputs</p>
       </div>
 
@@ -27,7 +27,7 @@ const Step3ProjectGoals = ({ register, errors, setValue, getValues, watch }) => 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
             <Target className="h-6 w-6 text-blue-600 mr-2" />
-            <h4 className="text-xl font-semibold text-gray-900">1. Project Goal, Objectives and Expected Outputs</h4>
+            <h4 className="text-xl font-semibold text-gray-900">1. Project Goal, Objectives and Expected Outputs (max-500 words)</h4>
           </div>
           <div className={`text-sm font-medium px-3 py-1 rounded-full ${
             goalWordCount > 500 ? 'bg-red-100 text-red-700' : 
@@ -40,16 +40,16 @@ const Step3ProjectGoals = ({ register, errors, setValue, getValues, watch }) => 
 
         <div className="space-y-6">
           <div className="bg-white p-4 rounded-lg border border-blue-100">
-            <h5 className="font-medium text-gray-900 mb-2">This section should include:</h5>
+            <h5 className="font-medium text-gray-900 mb-2">This section should contain a clear and specific statement of what the proposed project will accomplish. This section should include:</h5>
             <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-              <li>Detailed presentation and analysis of the problem/threats</li>
-              <li>The rationale of the project and reasoning behind the need</li>
-              <li>The Goal - desired state the project aims to achieve</li>
-              <li>The Impact - long-term and overarching benefits</li>
-              <li>The Objectives - what you plan to achieve by project end</li>
-              <li>The Outcomes - intended short/medium-term changes</li>
-              <li>The Outputs - specific products, goods, and services</li>
-              <li>The Activities - how activities provide desired solutions</li>
+              <li>A detailed presentation and analysis of the problem/threats or issue to be addressed (problem statement)</li>
+              <li>The rationale of the project. This should explain the reasoning behind the need for the project. Demonstrate the relevance of the project to the threats identified. It should also explain the reasons and interest of developing a partnership with other organizations such as government agencies, NGO's, or community organizations for the project implementation</li>
+              <li>The Goal - The desired state the project is aiming to achieve</li>
+              <li>The Impact of the project – What will be the long–term and overarching benefits of your project?</li>
+              <li>The Objectives - What do you plan to achieve by the end of your project?</li>
+              <li>The Outcomes of the project - What are the intended short and medium-term changes that can be directly attributed to the project and result from the achievement of the planned outputs?</li>
+              <li>The Outputs - What are specific products, goods, and services created through the implementation of several project activities?</li>
+              <li>The Activities that the project will conduct. How will the activities provide the desired solutions?</li>
             </ul>
           </div>
 
@@ -76,13 +76,13 @@ const Step3ProjectGoals = ({ register, errors, setValue, getValues, watch }) => 
       <div className="bg-green-50 p-6 rounded-lg border border-green-200">
         <div className="flex items-center mb-4">
           <List className="h-6 w-6 text-green-600 mr-2" />
-          <h4 className="text-xl font-semibold text-gray-900">2. Logical Framework</h4>
+          <h4 className="text-xl font-semibold text-gray-900">LOGICAL FRAMEWORK</h4>
         </div>
 
         <div className="space-y-6">
           {/* Project Goal */}
           <div>
-            <label className="form-label">Project Goal *</label>
+            <label className="form-label">Goal:</label>
             <textarea
               {...register('logicalFrameworkGoal')}
               className="form-input"
@@ -94,254 +94,246 @@ const Step3ProjectGoals = ({ register, errors, setValue, getValues, watch }) => 
             )}
           </div>
 
-          {/* Objective 1 */}
+          {/* Logical Framework Table Structure */}
           <div className="bg-white p-4 rounded-lg border border-green-100">
-            <h5 className="font-semibold text-gray-900 mb-4">Objective 1</h5>
-            <div className="space-y-4">
-              <div>
-                <label className="form-label">Objective 1 *</label>
-                <textarea
-                  {...register('objective1')}
-                  className="form-input"
-                  rows="2"
-                  placeholder="Insert Objective 1"
-                />
-                {errors.objective1 && (
-                  <p className="form-error">{errors.objective1.message}</p>
-                )}
-              </div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300">
+                <thead>
+                  <tr className="bg-gray-50">
+                    <th className="border border-gray-300 px-3 py-2 text-left font-medium">Intervention Logic</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-medium">Indicators (SMART)</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-medium">Means of Verification</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-medium">Assumptions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Objective 1 Row */}
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2 bg-blue-50">
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-sm font-medium">Objective 1:</label>
+                          <textarea
+                            {...register('objective1')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Insert Objective 1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Outcome:</label>
+                          <textarea
+                            {...register('outcome1')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Expected outcome"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Output 1.1:</label>
+                          <textarea
+                            {...register('output1_1')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Output 1.1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Output 1.2:</label>
+                          <textarea
+                            {...register('output1_2')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Output 1.2"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('indicators1')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="SMART indicators for Objective 1"
+                      />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('verification1')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="Means of verification for Objective 1"
+                      />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('assumptions1')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="Assumptions for Objective 1"
+                      />
+                    </td>
+                  </tr>
 
-              <div>
-                <label className="form-label">Outcome 1</label>
-                <textarea
-                  {...register('outcome1')}
-                  className="form-input"
-                  rows="2"
-                  placeholder="Expected outcome for Objective 1"
-                />
-              </div>
+                  {/* Objective 2 Row */}
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2 bg-blue-50">
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-sm font-medium">Objective 2:</label>
+                          <textarea
+                            {...register('objective2')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Insert Objective 2"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Outcome:</label>
+                          <textarea
+                            {...register('outcome2')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Expected outcome"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Output 2.1:</label>
+                          <textarea
+                            {...register('output2_1')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Output 2.1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Output 2.2:</label>
+                          <textarea
+                            {...register('output2_2')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Output 2.2"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('indicators2')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="SMART indicators for Objective 2"
+                      />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('verification2')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="Means of verification for Objective 2"
+                      />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('assumptions2')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="Assumptions for Objective 2"
+                      />
+                    </td>
+                  </tr>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Output 1.1</label>
-                  <textarea
-                    {...register('output1_1')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="First output for Objective 1"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Output 1.2</label>
-                  <textarea
-                    {...register('output1_2')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Second output for Objective 1"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="form-label">Indicators (SMART)</label>
-                  <textarea
-                    {...register('indicators1')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Specific, Measurable, Achievable, Relevant, Time-bound indicators"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Means of Verification</label>
-                  <textarea
-                    {...register('verification1')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="How will you verify achievement?"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Assumptions</label>
-                  <textarea
-                    {...register('assumptions1')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Key assumptions for success"
-                  />
-                </div>
-              </div>
+                  {/* Objective 3 Row */}
+                  <tr>
+                    <td className="border border-gray-300 px-3 py-2 bg-blue-50">
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-sm font-medium">Objective 3:</label>
+                          <textarea
+                            {...register('objective3')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Insert Objective 3"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Outcome:</label>
+                          <textarea
+                            {...register('outcome3')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Expected outcome"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Output 3.1:</label>
+                          <textarea
+                            {...register('output3_1')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Output 3.1"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium">Output 3.2:</label>
+                          <textarea
+                            {...register('output3_2')}
+                            className="w-full p-1 text-sm border border-gray-200 rounded"
+                            rows="2"
+                            placeholder="Output 3.2"
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('indicators3')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="SMART indicators for Objective 3"
+                      />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('verification3')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="Means of verification for Objective 3"
+                      />
+                    </td>
+                    <td className="border border-gray-300 px-3 py-2">
+                      <textarea
+                        {...register('assumptions3')}
+                        className="w-full p-1 text-sm border border-gray-200 rounded"
+                        rows="8"
+                        placeholder="Assumptions for Objective 3"
+                      />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
-          </div>
-
-          {/* Objective 2 */}
-          <div className="bg-white p-4 rounded-lg border border-green-100">
-            <h5 className="font-semibold text-gray-900 mb-4">Objective 2</h5>
-            <div className="space-y-4">
-              <div>
-                <label className="form-label">Objective 2</label>
-                <textarea
-                  {...register('objective2')}
-                  className="form-input"
-                  rows="2"
-                  placeholder="Insert Objective 2 (if applicable)"
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Outcome 2</label>
-                <textarea
-                  {...register('outcome2')}
-                  className="form-input"
-                  rows="2"
-                  placeholder="Expected outcome for Objective 2"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Output 2.1</label>
-                  <textarea
-                    {...register('output2_1')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="First output for Objective 2"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Output 2.2</label>
-                  <textarea
-                    {...register('output2_2')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Second output for Objective 2"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="form-label">Indicators (SMART)</label>
-                  <textarea
-                    {...register('indicators2')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Specific, Measurable, Achievable, Relevant, Time-bound indicators"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Means of Verification</label>
-                  <textarea
-                    {...register('verification2')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="How will you verify achievement?"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Assumptions</label>
-                  <textarea
-                    {...register('assumptions2')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Key assumptions for success"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Objective 3 */}
-          <div className="bg-white p-4 rounded-lg border border-green-100">
-            <h5 className="font-semibold text-gray-900 mb-4">Objective 3</h5>
-            <div className="space-y-4">
-              <div>
-                <label className="form-label">Objective 3</label>
-                <textarea
-                  {...register('objective3')}
-                  className="form-input"
-                  rows="2"
-                  placeholder="Insert Objective 3 (if applicable)"
-                />
-              </div>
-
-              <div>
-                <label className="form-label">Outcome 3</label>
-                <textarea
-                  {...register('outcome3')}
-                  className="form-input"
-                  rows="2"
-                  placeholder="Expected outcome for Objective 3"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="form-label">Output 3.1</label>
-                  <textarea
-                    {...register('output3_1')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="First output for Objective 3"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Output 3.2</label>
-                  <textarea
-                    {...register('output3_2')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Second output for Objective 3"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="form-label">Indicators (SMART)</label>
-                  <textarea
-                    {...register('indicators3')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Specific, Measurable, Achievable, Relevant, Time-bound indicators"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Means of Verification</label>
-                  <textarea
-                    {...register('verification3')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="How will you verify achievement?"
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Assumptions</label>
-                  <textarea
-                    {...register('assumptions3')}
-                    className="form-input"
-                    rows="2"
-                    placeholder="Key assumptions for success"
-                  />
-                </div>
-              </div>
-            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              Note: The table can be adapted to correspond to the number of objectives and outputs based on the project design.
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Help Section */}
-      <div className="bg-yellow-50 p-6 rounded-lg border border-yellow-200">
-        <div className="flex items-center mb-3">
-          <AlertCircle className="h-5 w-5 text-yellow-600 mr-2" />
-          <h5 className="font-medium text-gray-900">Logical Framework Tips</h5>
+      {/* Important Notes */}
+      <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+        <div className="flex items-start">
+          <AlertCircle className="h-5 w-5 text-yellow-600 mr-2 mt-0.5 flex-shrink-0" />
+          <div>
+            <h5 className="font-medium text-gray-900 mb-2">Important Notes:</h5>
+            <ul className="text-sm text-gray-700 space-y-1">
+              <li>• Ensure all objectives are SMART (Specific, Measurable, Achievable, Relevant, Time-bound)</li>
+              <li>• Indicators should be quantifiable and verifiable</li>
+              <li>• The logical framework should align with your project's thematic area</li>
+              <li>• Adapt the number of objectives and outputs based on your project design</li>
+            </ul>
+          </div>
         </div>
-        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-          <li>The table can be adapted to correspond to the number of objectives and outputs based on your project design</li>
-          <li>SMART indicators should be Specific, Measurable, Achievable, Relevant, and Time-bound</li>
-          <li>Means of verification should clearly state how you will measure and document progress</li>
-          <li>Assumptions are external factors that could affect project success but are beyond your control</li>
-        </ul>
       </div>
     </div>
   )
